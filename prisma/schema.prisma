@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Stores all possible fields that can be used across different user types
+model FieldsMaster {
+  id           Int      @id @default(autoincrement())
+  fieldName    String   @unique @map("field_name") @db.VarChar(50)
+  fieldLabel   String   @map("field_label") @db.VarChar(100)
+  fieldType    String   @map("field_type") @db.VarChar(20)
+  fieldOptions Json?    @map("field_options")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  userTypeFields UserTypeField[]
+
+  @@map("fields_master")
+}
+
+// Stores different types of users in the system
+model UserType {
+  id        Int      @id @default(autoincrement())
+  typeName  String   @unique @map("type_name") @db.VarChar(50)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  userTypeFields UserTypeField[]
+  requests       Request[]
+
+  @@map("user_types")
+}
+
+// Junction table linking user types to their required fields
+model UserTypeField {
+  id         Int      @id @default(autoincrement())
+  userTypeId Int      @map("user_type_id")
+  fieldId    Int      @map("field_id")
+  isRequired Boolean  @default(false) @map("is_required")
+  fieldOrder Int      @default(0) @map("field_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  userType UserType     @relation(fields: [userTypeId], references: [id], onDelete: Cascade)
+  field    FieldsMaster @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([userTypeId, fieldId])
+  @@map("user_type_fields")
+}
+
+// Stores all user requests with flexible JSONB data storage
+model Request {
+  id          Int       @id @default(autoincrement())
+  userTypeId  Int       @map("user_type_id")
+  data        Json
+  status      String    @default("pending") @db.VarChar(20)
+  adminNotes  String?   @map("admin_notes")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  processedAt DateTime? @map("processed_at")
+
+  userType UserType @relation(fields: [userTypeId], references: [id])
+
+  @@index([status])
+  @@index([userTypeId])
+  @@index([createdAt])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("requests")
+}

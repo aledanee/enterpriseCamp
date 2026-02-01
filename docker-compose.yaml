@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lesone_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lesone_user
+      POSTGRES_PASSWORD: lesone_password
+      POSTGRES_DB: lesone_db
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lesone_user -d lesone_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
