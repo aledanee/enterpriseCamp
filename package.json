@@ -11,6 +11,8 @@
     "test:integration": "jest test/intgrationTest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "lint": "echo 'Linting skipped - ESLint not configured'",
+    "format:check": "echo 'Format check skipped - Prettier not configured'",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
