@@ -13,7 +13,17 @@ const indexRouterV1 = require('./indexRouterV1');
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'", `http://localhost:${process.env.PORT || 3220}`],
+    },
+  },
+}));
 app.use(cors());
 
 // Body parsing middleware
