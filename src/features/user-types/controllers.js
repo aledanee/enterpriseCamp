@@ -1,22 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const Joi = require('joi');
 const logger = require('../../shared/services/logger');
-
-// Initialize prisma instance
-let prisma;
-
-// Handle both test and production environments
-if (process.env.NODE_ENV === 'test') {
-  // In test environment, prisma will be mocked
-  prisma = new PrismaClient();
-} else {
-  // In production, create real prisma instance
-  prisma = new PrismaClient();
-}
+const prisma = require('../../db/prisma');
 
 /**
  * Validation schemas for user types
  */
+
 const createUserTypeSchema = Joi.object({
   type_name: Joi.string()
     .min(2)
