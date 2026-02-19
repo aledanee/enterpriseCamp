@@ -29,69 +29,69 @@ const getFieldsMaster = async (req, res) => {
     const where = {};
     if (search) {
       where.OR = [
-        { field_name: { contains: search, mode: 'insensitive' } },
-        { field_label: { contains: search, mode: 'insensitive' } }
+        { fieldName: { contains: search, mode: 'insensitive' } },
+        { fieldLabel: { contains: search, mode: 'insensitive' } }
       ];
     }
     if (field_type !== 'all') {
-      where.field_type = field_type;
+      where.fieldType = field_type;
     }
 
     // Build order by clause
     const orderBy = {};
     if (sort === 'name') {
-      orderBy.field_name = order;
+      orderBy.fieldName = order;
     } else if (sort === 'type') {
-      orderBy.field_type = order;
+      orderBy.fieldType = order;
     } else if (sort === 'created_at') {
-      orderBy.created_at = order;
+      orderBy.createdAt = order;
     } else {
       orderBy.id = order;
     }
 
     // Get fields with usage data
     const [fields, totalCount] = await Promise.all([
-      prisma.fields_master.findMany({
+      prisma.fieldsMaster.findMany({
         where,
         orderBy,
         skip: offset,
         take: perPage,
         include: include.includes('usage') ? {
-          user_type_fields: {
+          userTypeFields: {
             include: {
-              user_type: {
+              userType: {
                 select: {
                   id: true,
-                  type_name: true,
-                  is_active: true
+                  typeName: true,
+                  isActive: true
                 }
               }
             }
           }
         } : false
       }),
-      prisma.fields_master.count({ where })
+      prisma.fieldsMaster.count({ where })
     ]);
 
     // Process fields with usage statistics
     const processedFields = fields.map(field => {
       const result = {
         id: field.id,
-        field_name: field.field_name,
-        field_label: field.field_label,
-        field_type: field.field_type,
-        field_options: field.field_options,
-        created_at: field.created_at,
-        updated_at: field.updated_at
+        field_name: field.fieldName,
+        field_label: field.fieldLabel,
+        field_type: field.fieldType,
+        field_options: field.fieldOptions,
+        created_at: field.createdAt,
+        updated_at: field.updatedAt
       };
 
-      if (include.includes('usage') && field.user_type_fields) {
-        const userTypes = field.user_type_fields.map(utf => ({
-          user_type_id: utf.user_type.id,
-          type_name: utf.user_type.type_name,
-          is_active: utf.user_type.is_active,
-          is_required: utf.is_required,
-          field_order: utf.field_order
+      if (include.includes('usage') && field.userTypeFields) {
+        const userTypes = field.userTypeFields.map(utf => ({
+          user_type_id: utf.userType.id,
+          type_name: utf.userType.typeName,
+          is_active: utf.userType.isActive,
+          is_required: utf.isRequired,
+          field_order: utf.fieldOrder
         }));
 
         result.usage = {
@@ -105,14 +105,14 @@ const getFieldsMaster = async (req, res) => {
     });
 
     // Get field type counts for metadata
-    const fieldTypeCounts = await prisma.fields_master.groupBy({
-      by: ['field_type'],
+    const fieldTypeCounts = await prisma.fieldsMaster.groupBy({
+      by: ['fieldType'],
       _count: { id: true }
     });
 
     const typeBreakdown = {};
     fieldTypeCounts.forEach(item => {
-      typeBreakdown[item.field_type] = item._count.id;
+      typeBreakdown[item.fieldType] = item._count.id;
     });
 
     const totalPages = Math.ceil(totalCount / perPage);
@@ -184,17 +184,17 @@ const getFieldDetail = async (req, res) => {
       });
     }
 
-    const field = await prisma.fields_master.findUnique({
+    const field = await prisma.fieldsMaster.findUnique({
       where: { id: fieldId },
       include: {
-        user_type_fields: {
+        userTypeFields: {
           include: {
-            user_type: {
+            userType: {
               select: {
                 id: true,
-                type_name: true,
-                is_active: true,
-                created_at: true
+                typeName: true,
+                isActive: true,
+                createdAt: true
               }
             }
           }
@@ -211,13 +211,13 @@ const getFieldDetail = async (req, res) => {
     }
 
     // Build usage details
-    const userTypes = field.user_type_fields.map(utf => ({
-      user_type_id: utf.user_type.id,
-      type_name: utf.user_type.type_name,
-      is_active: utf.user_type.is_active,
-      is_required: utf.is_required,
-      field_order: utf.field_order,
-      created_at: utf.user_type.created_at
+    const userTypes = field.userTypeFields.map(utf => ({
+      user_type_id: utf.userType.id,
+      type_name: utf.userType.typeName,
+      is_active: utf.userType.isActive,
+      is_required: utf.isRequired,
+      field_order: utf.fieldOrder,
+      created_at: utf.userType.createdAt
     }));
 
     const responseTime = Date.now() - startTime;
@@ -226,7 +226,7 @@ const getFieldDetail = async (req, res) => {
       action: 'get_field_detail',
       admin_id: req.admin.id,
       field_id: fieldId,
-      field_name: field.field_name,
+      field_name: field.fieldName,
       usage_count: userTypes.length,
       response_time_ms: responseTime,
       timestamp: new Date().toISOString()
@@ -237,12 +237,12 @@ const getFieldDetail = async (req, res) => {
       data: {
         field: {
           id: field.id,
-          field_name: field.field_name,
-          field_label: field.field_label,
-          field_type: field.field_type,
-          field_options: field.field_options,
-          created_at: field.created_at,
-          updated_at: field.updated_at
+          field_name: field.fieldName,
+          field_label: field.fieldLabel,
+          field_type: field.fieldType,
+          field_options: field.fieldOptions,
+          created_at: field.createdAt,
+          updated_at: field.updatedAt
         },
         usage: {
           total_user_types: userTypes.length,

@@ -1,16 +1,16 @@
 // Mock Prisma methods
 const mockPrisma = {
-  user_types: {
+  userType: {
     count: jest.fn(),
     findMany: jest.fn()
   },
-  fields_master: {
+  fieldsMaster: {
     count: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     count: jest.fn()
   },
-  requests: {
+  request: {
     count: jest.fn(),
     groupBy: jest.fn()
   },
@@ -129,14 +129,14 @@ describe('Database Controllers - Happy Path Scenarios', () => {
   // ───────────────────────────────────────────────
   describe('getDatabaseStats - Happy Path', () => {
     test('should return comprehensive database statistics', async () => {
-      mockPrisma.user_types.count
+      mockPrisma.userType.count
         .mockResolvedValueOnce(3)   // total
         .mockResolvedValueOnce(2);  // active
 
-      mockPrisma.fields_master.count.mockResolvedValue(15);
-      mockPrisma.user_type_fields.count.mockResolvedValue(25);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(15);
+      mockPrisma.userTypeField.count.mockResolvedValue(25);
 
-      mockPrisma.requests.count
+      mockPrisma.request.count
         .mockResolvedValueOnce(50)  // total
         .mockResolvedValueOnce(10)  // pending
         .mockResolvedValueOnce(35)  // approved
@@ -149,12 +149,12 @@ describe('Database Controllers - Happy Path Scenarios', () => {
         .mockResolvedValueOnce([{ size: '12 MB' }])
         .mockResolvedValueOnce([{ tablename: 'requests', total_size: '8 MB', raw_size: 8388608n }]);
 
-      mockPrisma.requests.groupBy.mockResolvedValue([
-        { user_type_id: 1, _count: { id: 30 } }
+      mockPrisma.request.groupBy.mockResolvedValue([
+        { userTypeId: 1, _count: { id: 30 } }
       ]);
 
-      mockPrisma.user_types.findMany.mockResolvedValue([
-        { id: 1, type_name: 'student' }
+      mockPrisma.userType.findMany.mockResolvedValue([
+        { id: 1, typeName: 'student' }
       ]);
 
       await getDatabaseStats(mockReq, mockRes);
@@ -368,7 +368,7 @@ describe('Database Controllers - Error Scenarios', () => {
 
   describe('getDatabaseStats - Error Path', () => {
     test('should return 500 when database query fails', async () => {
-      mockPrisma.user_types.count.mockRejectedValue(new Error('Query failed'));
+      mockPrisma.userType.count.mockRejectedValue(new Error('Query failed'));
 
       await getDatabaseStats(mockReq, mockRes);
 

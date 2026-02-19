@@ -58,70 +58,70 @@ const getUserTypes = async (req, res) => {
     // Build where clause
     const where = {};
     if (search) {
-      where.type_name = {
+      where.typeName = {
         contains: search,
         mode: 'insensitive'
       };
     }
     if (status !== 'all') {
-      where.is_active = status === 'active';
+      where.isActive = status === 'active';
     }
 
     // Build order by clause
     const orderBy = {};
     if (sort === 'name') {
-      orderBy.type_name = order;
+      orderBy.typeName = order;
     } else if (sort === 'created_at') {
-      orderBy.created_at = order;
+      orderBy.createdAt = order;
     }
 
     // Get user types with counts
     const [userTypes, totalCount] = await Promise.all([
-      prisma.user_types.findMany({
+      prisma.userType.findMany({
         where,
         orderBy,
         skip: offset,
         take: perPage,
         include: {
-          user_type_fields: include.includes('fields') ? {
+          userTypeFields: include.includes('fields') ? {
             include: {
-              fields_master: true
+              field: true
             },
             orderBy: {
-              field_order: 'asc'
+              fieldOrder: 'asc'
             }
           } : false,
           requests: include.includes('stats') ? {
             select: {
               id: true,
               status: true,
-              created_at: true
+              createdAt: true
             }
           } : false
         }
       }),
-      prisma.user_types.count({ where })
+      prisma.userType.count({ where })
     ]);
 
     // Process statistics if requested
     const processedUserTypes = userTypes.map(userType => {
       const result = {
         id: userType.id,
-        type_name: userType.type_name,
-        is_active: userType.is_active,
-        created_at: userType.created_at,
-        updated_at: userType.updated_at
+        type_name: userType.typeName,
+        is_active: userType.isActive,
+        created_at: userType.createdAt,
+        updated_at: userType.updatedAt
       };
 
       if (include.includes('fields')) {
-        result.fields_count = userType.user_type_fields?.length || 0;
-        result.fields = userType.user_type_fields?.map(utf => ({
-          field_id: utf.field_id,
-          field_name: utf.fields_master.field_name,
-          field_label: utf.fields_master.field_label,
-          field_type: utf.fields_master.field_type,
-          is_required: utf.is_required,
-          field_order: utf.field_order
+        result.fields_count = userType.userTypeFields?.length || 0;
+        result.fields = userType.userTypeFields?.map(utf => ({
+          field_id: utf.fieldId,
+          field_name: utf.field.fieldName,
+          field_label: utf.field.fieldLabel,
+          field_type: utf.field.fieldType,
+          is_required: utf.isRequired,
+          field_order: utf.fieldOrder
         })) || [];
       }
 
@@ -133,7 +133,7 @@ const getUserTypes = async (req, res) => {
           completed_requests: requests.filter(r => r.status === 'approved').length,
           rejected_requests: requests.filter(r => r.status === 'rejected').length,
           last_used: requests.length > 0 ? 
-            Math.max(...requests.map(r => new Date(r.created_at).getTime())) : null
+            Math.max(...requests.map(r => new Date(r.createdAt).getTime())) : null
         };
         
         if (result.usage_stats.last_used) {
@@ -145,8 +145,8 @@ const getUserTypes = async (req, res) => {
     });
 
     const totalPages = Math.ceil(totalCount / perPage);
-    const activeCount = await prisma.user_types.count({ where: { is_active: true } });
-    const inactiveCount = await prisma.user_types.count({ where: { is_active: false } });
+    const activeCount = await prisma.userType.count({ where: { isActive: true } });
+    const inactiveCount = await prisma.userType.count({ where: { isActive: false } });
 
     const responseTime = Date.now() - startTime;
 
@@ -216,25 +216,25 @@ const getUserType = async (req, res) => {
       });
     }
 
-    const userType = await prisma.user_types.findUnique({
+    const userType = await prisma.userType.findUnique({
       where: { id: userTypeId },
       include: {
-        user_type_fields: {
+        userTypeFields: {
           include: {
-            fields_master: true
+            field: true
           },
           orderBy: {
-            field_order: 'asc'
+            fieldOrder: 'asc'
           }
         },
         requests: {
           select: {
             id: true,
             status: true,
-            created_at: true
+            createdAt: true
           },
           orderBy: {
-            created_at: 'desc'
+            createdAt: 'desc'
           },
           take: 10
         }
@@ -271,31 +271,31 @@ const getUserType = async (req, res) => {
       },
       recent_activity: requests.slice(0, 5).map(r => ({
         request_id: r.id,
-        created_at: r.created_at,
+        created_at: r.createdAt,
         status: r.status
       })),
       usage_trend: {
-        this_week: requests.filter(r => new Date(r.created_at) >= weekAgo).length,
-        this_month: requests.filter(r => new Date(r.created_at) >= monthAgo).length
+        this_week: requests.filter(r => new Date(r.createdAt) >= weekAgo).length,
+        this_month: requests.filter(r => new Date(r.createdAt) >= monthAgo).length
       }
     };
 
     const responseData = {
       user_type: {
         id: userType.id,
-        type_name: userType.type_name,
-        is_active: userType.is_active,
-        created_at: userType.created_at,
-        updated_at: userType.updated_at
+        type_name: userType.typeName,
+        is_active: userType.isActive,
+        created_at: userType.createdAt,
+        updated_at: userType.updatedAt
       },
-      fields: userType.user_type_fields.map(utf => ({
-        field_id: utf.field_id,
-        field_name: utf.fields_master.field_name,
-        field_label: utf.fields_master.field_label,
-        field_type: utf.fields_master.field_type,
-        field_options: utf.fields_master.field_options,
-        is_required: utf.is_required,
-        field_order: utf.field_order
+      fields: userType.userTypeFields.map(utf => ({
+        field_id: utf.fieldId,
+        field_name: utf.field.fieldName,
+        field_label: utf.field.fieldLabel,
+        field_type: utf.field.fieldType,
+        field_options: utf.field.fieldOptions,
+        is_required: utf.isRequired,
+        field_order: utf.fieldOrder
       })),
       usage_analytics
     };
@@ -306,8 +306,8 @@ const getUserType = async (req, res) => {
       action: 'get_user_type_details',
       admin_id: req.admin.id,
       user_type_id: userTypeId,
-      user_type_name: userType.type_name,
-      fields_count: userType.user_type_fields.length,
+      user_type_name: userType.typeName,
+      fields_count: userType.userTypeFields.length,
       requests_count: requests.length,
       response_time_ms: responseTime,
       timestamp: new Date().toISOString()
@@ -347,9 +347,9 @@ const getFieldsMaster = async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const fields = await prisma.fields_master.findMany({
+    const fields = await prisma.fieldsMaster.findMany({
       orderBy: {
-        field_name: 'asc'
+        fieldName: 'asc'
       }
     });
 
@@ -438,9 +438,9 @@ const createUserType = async (req, res) => {
     const { type_name, selectedFields } = value;
 
     // Check for duplicate name
-    const existingUserType = await prisma.user_types.findFirst({
+    const existingUserType = await prisma.userType.findFirst({
       where: {
-        type_name: {
+        typeName: {
           equals: type_name,
           mode: 'insensitive'
         }
@@ -480,7 +480,7 @@ const createUserType = async (req, res) => {
 
     // Validate field IDs exist
     const fieldIds = selectedFields.map(f => f.field_id);
-    const validFields = await prisma.fields_master.findMany({
+    const validFields = await prisma.fieldsMaster.findMany({
       where: {
         id: { in: fieldIds }
       }
@@ -499,22 +499,22 @@ const createUserType = async (req, res) => {
     // Create user type and field associations in transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user type
-      const newUserType = await tx.user_types.create({
+      const newUserType = await tx.userType.create({
         data: {
-          type_name: type_name,
-          is_active: true
+          typeName: type_name,
+          isActive: true
         }
       });
 
       // Create field associations
       const fieldAssociations = selectedFields.map(field => ({
-        user_type_id: newUserType.id,
-        field_id: field.field_id,
-        is_required: field.is_required,
-        field_order: field.field_order
+        userTypeId: newUserType.id,
+        fieldId: field.field_id,
+        isRequired: field.is_required,
+        fieldOrder: field.field_order
       }));
 
-      await tx.user_type_fields.createMany({
+      await tx.userTypeField.createMany({
         data: fieldAssociations
       });
 
@@ -527,7 +527,7 @@ const createUserType = async (req, res) => {
       action: 'create_user_type_success',
       admin_id: req.admin.id,
       user_type_id: result.id,
-      type_name: result.type_name,
+      type_name: result.typeName,
       fields_count: selectedFields.length,
       required_fields: selectedFields.filter(f => f.is_required).length,
       response_time_ms: responseTime,
@@ -539,10 +539,10 @@ const createUserType = async (req, res) => {
       message: 'User type created successfully',
       data: {
         user_type_id: result.id,
-        type_name: result.type_name,
-        is_active: result.is_active,
+        type_name: result.typeName,
+        is_active: result.isActive,
         fields_count: selectedFields.length,
-        created_at: result.created_at
+        created_at: result.createdAt
       }
     });
 
@@ -611,10 +611,10 @@ const updateUserType = async (req, res) => {
     const { type_name, selectedFields } = value;
 
     // Check if user type exists
-    const existingUserType = await prisma.user_types.findUnique({
+    const existingUserType = await prisma.userType.findUnique({
       where: { id: userTypeId },
       include: {
-        user_type_fields: true
+        userTypeFields: true
       }
     });
 
@@ -627,9 +627,9 @@ const updateUserType = async (req, res) => {
     }
 
     // Check for duplicate name (excluding current record)
-    const duplicateUserType = await prisma.user_types.findFirst({
+    const duplicateUserType = await prisma.userType.findFirst({
       where: {
-        type_name: {
+        typeName: {
           equals: type_name,
           mode: 'insensitive'
         },
@@ -663,28 +663,28 @@ const updateUserType = async (req, res) => {
     // Update user type and field associations in transaction
     const result = await prisma.$transaction(async (tx) => {
       // Update user type name if changed
-      const updatedUserType = await tx.user_types.update({
+      const updatedUserType = await tx.userType.update({
         where: { id: userTypeId },
         data: {
-          type_name: type_name,
-          updated_at: new Date()
+          typeName: type_name,
+          updatedAt: new Date()
         }
       });
 
       // Remove existing field associations
-      await tx.user_type_fields.deleteMany({
-        where: { user_type_id: userTypeId }
+      await tx.userTypeField.deleteMany({
+        where: { userTypeId: userTypeId }
       });
 
       // Create new field associations
       const fieldAssociations = selectedFields.map(field => ({
-        user_type_id: userTypeId,
-        field_id: field.field_id,
-        is_required: field.is_required,
-        field_order: field.field_order
+        userTypeId: userTypeId,
+        fieldId: field.field_id,
+        isRequired: field.is_required,
+        fieldOrder: field.field_order
       }));
 
-      await tx.user_type_fields.createMany({
+      await tx.userTypeField.createMany({
         data: fieldAssociations
       });
 
@@ -694,20 +694,20 @@ const updateUserType = async (req, res) => {
     const responseTime = Date.now() - startTime;
 
     // Analyze changes
-    const oldFieldIds = existingUserType.user_type_fields.map(f => f.field_id).sort();
+    const oldFieldIds = existingUserType.userTypeFields.map(f => f.fieldId).sort();
     const newFieldIds = selectedFields.map(f => f.field_id).sort();
     const changes = {
-      name_changed: existingUserType.type_name !== type_name,
+      name_changed: existingUserType.typeName !== type_name,
       fields_added: newFieldIds.filter(id => !oldFieldIds.includes(id)).length,
       fields_removed: oldFieldIds.filter(id => !newFieldIds.includes(id)).length,
-      requirements_changed: selectedFields.length - existingUserType.user_type_fields.length
+      requirements_changed: selectedFields.length - existingUserType.userTypeFields.length
     };
 
     logger.info('User type updated successfully', {
       action: 'update_user_type_success',
       admin_id: req.admin.id,
       user_type_id: userTypeId,
-      old_name: existingUserType.type_name,
+      old_name: existingUserType.typeName,
       new_name: type_name,
       changes: changes,
       fields_count: selectedFields.length,
@@ -720,10 +720,10 @@ const updateUserType = async (req, res) => {
       message: 'User type updated successfully',
       data: {
         user_type_id: result.id,
-        type_name: result.type_name,
-        is_active: result.is_active,
+        type_name: result.typeName,
+        is_active: result.isActive,
         fields_count: selectedFields.length,
-        updated_at: result.updated_at,
+        updated_at: result.updatedAt,
         changes: changes
       }
     });
@@ -767,14 +767,14 @@ const getUserTypeDeleteInfo = async (req, res) => {
       });
     }
 
-    const userType = await prisma.user_types.findUnique({
+    const userType = await prisma.userType.findUnique({
       where: { id: userTypeId },
       include: {
         requests: {
           select: {
             id: true,
             status: true,
-            created_at: true
+            createdAt: true
           }
         }
       }
@@ -788,9 +788,9 @@ const getUserTypeDeleteInfo = async (req, res) => {
     }
 
     // Check if this is the last active user type
-    const activeUserTypesCount = await prisma.user_types.count({
+    const activeUserTypesCount = await prisma.userType.count({
       where: { 
-        is_active: true,
+        isActive: true,
         id: { not: userTypeId }
       }
     });
@@ -799,7 +799,7 @@ const getUserTypeDeleteInfo = async (req, res) => {
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
-    const recentRequests = requests.filter(r => new Date(r.created_at) >= twentyFourHoursAgo);
+    const recentRequests = requests.filter(r => new Date(r.createdAt) >= twentyFourHoursAgo);
     const activeRequests = requests.filter(r => r.status === 'pending');
 
     const usage_statistics = {
@@ -807,7 +807,7 @@ const getUserTypeDeleteInfo = async (req, res) => {
       active_requests: activeRequests.length,
       recent_requests_24h: recentRequests.length,
       last_request_date: requests.length > 0 ? 
-        Math.max(...requests.map(r => new Date(r.created_at).getTime())) : null
+        Math.max(...requests.map(r => new Date(r.createdAt).getTime())) : null
     };
 
     if (usage_statistics.last_request_date) {
@@ -837,9 +837,9 @@ const getUserTypeDeleteInfo = async (req, res) => {
       data: {
         user_type: {
           id: userType.id,
-          type_name: userType.type_name,
-          is_active: userType.is_active,
-          created_at: userType.created_at
+          type_name: userType.typeName,
+          is_active: userType.isActive,
+          created_at: userType.createdAt
         },
         usage_statistics,
         safety_check
@@ -895,9 +895,9 @@ const deleteUserType = async (req, res) => {
     }
 
     // Check if this is the last active user type
-    const activeUserTypesCount = await prisma.user_types.count({
+    const activeUserTypesCount = await prisma.userType.count({
       where: { 
-        is_active: true,
+        isActive: true,
         id: { not: userTypeId }
       }
     });
@@ -914,14 +914,14 @@ const deleteUserType = async (req, res) => {
       });
     }
 
-    const userType = await prisma.user_types.findUnique({
+    const userType = await prisma.userType.findUnique({
       where: { id: userTypeId },
       include: {
         requests: {
           select: {
             id: true,
             status: true,
-            created_at: true
+            createdAt: true
           }
         }
       }
@@ -938,17 +938,17 @@ const deleteUserType = async (req, res) => {
     // Delete user type and field associations in transaction
     const result = await prisma.$transaction(async (tx) => {
       // Mark user type as inactive (soft delete)
-      const deletedUserType = await tx.user_types.update({
+      const deletedUserType = await tx.userType.update({
         where: { id: userTypeId },
         data: {
-          is_active: false,
-          updated_at: new Date()
+          isActive: false,
+          updatedAt: new Date()
         }
       });
 
       // Remove field associations
-      await tx.user_type_fields.deleteMany({
-        where: { user_type_id: userTypeId }
+      await tx.userTypeField.deleteMany({
+        where: { userTypeId: userTypeId }
       });
 
       return deletedUserType;
@@ -960,7 +960,7 @@ const deleteUserType = async (req, res) => {
       action: 'delete_user_type_success',
       admin_id: req.admin.id,
       user_type_id: userTypeId,
-      type_name: userType.type_name,
+      type_name: userType.typeName,
       affected_requests: userType.requests.length,
       deletion_type: 'soft_delete',
       force_delete: !!force_delete,
@@ -973,7 +973,7 @@ const deleteUserType = async (req, res) => {
       message: 'User type deleted successfully',
       data: {
         user_type_id: userTypeId,
-        type_name: userType.type_name,
+        type_name: userType.typeName,
         deletion_type: 'soft_delete',
         affected_requests: userType.requests.length,
         deleted_at: new Date().toISOString()
@@ -1035,9 +1035,9 @@ const updateUserTypeStatus = async (req, res) => {
 
     // If deactivating, check it's not the last active user type
     if (!is_active) {
-      const activeUserTypesCount = await prisma.user_types.count({
+      const activeUserTypesCount = await prisma.userType.count({
         where: { 
-          is_active: true,
+          isActive: true,
           id: { not: userTypeId }
         }
       });
@@ -1051,11 +1051,11 @@ const updateUserTypeStatus = async (req, res) => {
       }
     }
 
-    const updatedUserType = await prisma.user_types.update({
+    const updatedUserType = await prisma.userType.update({
       where: { id: userTypeId },
       data: {
-        is_active: is_active,
-        updated_at: new Date()
+        isActive: is_active,
+        updatedAt: new Date()
       }
     });
 
@@ -1065,7 +1065,7 @@ const updateUserTypeStatus = async (req, res) => {
       action: 'update_user_type_status',
       admin_id: req.admin.id,
       user_type_id: userTypeId,
-      type_name: updatedUserType.type_name,
+      type_name: updatedUserType.typeName,
       old_status: !is_active,
       new_status: is_active,
       response_time_ms: responseTime,
@@ -1077,9 +1077,9 @@ const updateUserTypeStatus = async (req, res) => {
       message: `User type ${is_active ? 'activated' : 'deactivated'} successfully`,
       data: {
         user_type_id: updatedUserType.id,
-        type_name: updatedUserType.type_name,
-        is_active: updatedUserType.is_active,
-        updated_at: updatedUserType.updated_at
+        type_name: updatedUserType.typeName,
+        is_active: updatedUserType.isActive,
+        updated_at: updatedUserType.updatedAt
       }
     });
 

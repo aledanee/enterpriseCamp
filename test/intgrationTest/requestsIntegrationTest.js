@@ -4,17 +4,17 @@ const jwt = require('jsonwebtoken');
 
 // Mock Prisma
 const mockPrisma = {
-  user_types: {
+  userType: {
     findMany: jest.fn(),
     findUnique: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     findMany: jest.fn()
   },
-  fields_master: {
+  fieldsMaster: {
     findMany: jest.fn()
   },
-  requests: {
+  request: {
     create: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -58,9 +58,9 @@ describe('Requests Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    Object.values(mockPrisma.user_types).forEach(fn => fn.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(fn => fn.mockReset());
-    Object.values(mockPrisma.requests).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.userType).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.request).forEach(fn => fn.mockReset());
   });
 
   // ───────────────────────────────────────────────
@@ -70,11 +70,11 @@ describe('Requests Integration Tests', () => {
   describe('GET /api/v1/requests/user-types - Public: Active User Types', () => {
     test('should return active user types without auth', async () => {
       const mockUserTypes = [
-        { id: 1, type_name: 'student', is_active: true },
-        { id: 2, type_name: 'agent', is_active: true }
+        { id: 1, typeName: 'student', isActive: true },
+        { id: 2, typeName: 'agent', isActive: true }
       ];
 
-      mockPrisma.user_types.findMany.mockResolvedValue(mockUserTypes);
+      mockPrisma.userType.findMany.mockResolvedValue(mockUserTypes);
 
       const response = await request(app)
         .get('/api/v1/requests/user-types')
@@ -87,7 +87,7 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should return empty list when no active user types', async () => {
-      mockPrisma.user_types.findMany.mockResolvedValue([]);
+      mockPrisma.userType.findMany.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/v1/requests/user-types')
@@ -101,25 +101,25 @@ describe('Requests Integration Tests', () => {
 
   describe('GET /api/v1/requests/user-types/:id/fields - Public: User Type Fields', () => {
     test('should return fields for active user type without auth', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: true,
-          field_order: 1,
-          fields_master: {
-            id: 1, field_name: 'name', field_label: 'الاسم الكامل',
-            field_type: 'text', field_options: null
+          isRequired: true,
+          fieldOrder: 1,
+          field: {
+            id: 1, fieldName: 'name', fieldLabel: 'الاسم الكامل',
+            fieldType: 'text', fieldOptions: null
           }
         },
         {
-          is_required: true,
-          field_order: 2,
-          fields_master: {
-            id: 2, field_name: 'email', field_label: 'البريد الإلكتروني',
-            field_type: 'email', field_options: null
+          isRequired: true,
+          fieldOrder: 2,
+          field: {
+            id: 2, fieldName: 'email', fieldLabel: 'البريد الإلكتروني',
+            fieldType: 'email', fieldOptions: null
           }
         }
       ]);
@@ -136,7 +136,7 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should return 404 for non-existent user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .get('/api/v1/requests/user-types/999/fields')
@@ -147,8 +147,8 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should return 400 for inactive user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: false
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: false
       });
 
       const response = await request(app)
@@ -162,33 +162,33 @@ describe('Requests Integration Tests', () => {
 
   describe('POST /api/v1/requests - Public: Create Request', () => {
     test('should create request with valid data without auth', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: true,
-          fields_master: {
-            id: 1, field_name: 'name', field_label: 'الاسم الكامل',
-            field_type: 'text', field_options: null
+          isRequired: true,
+          field: {
+            id: 1, fieldName: 'name', fieldLabel: 'الاسم الكامل',
+            fieldType: 'text', fieldOptions: null
           }
         },
         {
-          is_required: true,
-          fields_master: {
-            id: 2, field_name: 'email', field_label: 'البريد الإلكتروني',
-            field_type: 'email', field_options: null
+          isRequired: true,
+          field: {
+            id: 2, fieldName: 'email', fieldLabel: 'البريد الإلكتروني',
+            fieldType: 'email', fieldOptions: null
           }
         }
       ]);
 
-      mockPrisma.requests.create.mockResolvedValue({
+      mockPrisma.request.create.mockResolvedValue({
         id: 1,
-        user_type_id: 1,
+        userTypeId: 1,
         data: { name: 'أحمد', email: 'ahmed@mail.com' },
         status: 'pending',
-        created_at: new Date('2026-02-14')
+        createdAt: new Date('2026-02-14')
       });
 
       const response = await request(app)
@@ -208,16 +208,16 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should reject request with missing required fields', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: true,
-          fields_master: {
-            id: 1, field_name: 'name', field_label: 'الاسم الكامل',
-            field_type: 'text', field_options: null
+          isRequired: true,
+          field: {
+            id: 1, fieldName: 'name', fieldLabel: 'الاسم الكامل',
+            fieldType: 'text', fieldOptions: null
           }
         }
       ]);
@@ -236,16 +236,16 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should reject request with invalid email format', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: true,
-          fields_master: {
-            id: 2, field_name: 'email', field_label: 'البريد الإلكتروني',
-            field_type: 'email', field_options: null
+          isRequired: true,
+          field: {
+            id: 2, fieldName: 'email', fieldLabel: 'البريد الإلكتروني',
+            fieldType: 'email', fieldOptions: null
           }
         }
       ]);
@@ -263,16 +263,16 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should reject request with invalid dropdown option', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: true,
-          fields_master: {
-            id: 7, field_name: 'course', field_label: 'التخصص',
-            field_type: 'dropdown', field_options: ['CS', 'Engineering', 'Medicine']
+          isRequired: true,
+          field: {
+            id: 7, fieldName: 'course', fieldLabel: 'التخصص',
+            fieldType: 'dropdown', fieldOptions: ['CS', 'Engineering', 'Medicine']
           }
         }
       ]);
@@ -300,7 +300,7 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should reject request for non-existent user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .post('/api/v1/requests')
@@ -315,8 +315,8 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should reject request for inactive user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: false
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: false
       });
 
       const response = await request(app)
@@ -349,19 +349,19 @@ describe('Requests Integration Tests', () => {
       const mockRequests = [
         {
           id: 1,
-          user_type_id: 1,
+          userTypeId: 1,
           data: { name: 'أحمد', email: 'ahmed@mail.com' },
           status: 'pending',
-          admin_notes: null,
-          created_at: new Date('2026-02-14'),
-          updated_at: new Date('2026-02-14'),
-          processed_at: null,
-          user_type: { id: 1, type_name: 'student', is_active: true }
+          adminNotes: null,
+          createdAt: new Date('2026-02-14'),
+          updatedAt: new Date('2026-02-14'),
+          processedAt: null,
+          userType: { id: 1, typeName: 'student', isActive: true }
         }
       ];
 
-      mockPrisma.requests.findMany.mockResolvedValue(mockRequests);
-      mockPrisma.requests.count
+      mockPrisma.request.findMany.mockResolvedValue(mockRequests);
+      mockPrisma.request.count
         .mockResolvedValueOnce(1)  // totalCount
         .mockResolvedValueOnce(1)  // pending
         .mockResolvedValueOnce(0)  // approved
@@ -382,8 +382,8 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should filter by status', async () => {
-      mockPrisma.requests.findMany.mockResolvedValue([]);
-      mockPrisma.requests.count
+      mockPrisma.request.findMany.mockResolvedValue([]);
+      mockPrisma.request.count
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(3)
         .mockResolvedValueOnce(5)
@@ -394,7 +394,7 @@ describe('Requests Integration Tests', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(mockPrisma.requests.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.request.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { status: 'pending' }
         })
@@ -406,36 +406,36 @@ describe('Requests Integration Tests', () => {
     test('should return request details with field labels', async () => {
       const mockRequest = {
         id: 1,
-        user_type_id: 1,
+        userTypeId: 1,
         data: { name: 'أحمد', email: 'ahmed@mail.com' },
         status: 'pending',
-        admin_notes: null,
-        created_at: new Date('2026-02-14'),
-        updated_at: new Date('2026-02-14'),
-        processed_at: null,
-        user_type: {
+        adminNotes: null,
+        createdAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14'),
+        processedAt: null,
+        userType: {
           id: 1,
-          type_name: 'student',
-          user_type_fields: [
+          typeName: 'student',
+          userTypeFields: [
             {
-              is_required: true,
-              field_order: 1,
-              fields_master: {
-                field_name: 'name', field_label: 'الاسم الكامل', field_type: 'text'
+              isRequired: true,
+              fieldOrder: 1,
+              field: {
+                fieldName: 'name', fieldLabel: 'الاسم الكامل', fieldType: 'text'
               }
             },
             {
-              is_required: true,
-              field_order: 2,
-              fields_master: {
-                field_name: 'email', field_label: 'البريد الإلكتروني', field_type: 'email'
+              isRequired: true,
+              fieldOrder: 2,
+              field: {
+                fieldName: 'email', fieldLabel: 'البريد الإلكتروني', fieldType: 'email'
               }
             }
           ]
         }
       };
 
-      mockPrisma.requests.findUnique.mockResolvedValue(mockRequest);
+      mockPrisma.request.findUnique.mockResolvedValue(mockRequest);
 
       const response = await request(app)
         .get('/api/v1/requests/admin/1')
@@ -457,7 +457,7 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should return 404 for non-existent request', async () => {
-      mockPrisma.requests.findUnique.mockResolvedValue(null);
+      mockPrisma.request.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .get('/api/v1/requests/admin/999')
@@ -471,19 +471,19 @@ describe('Requests Integration Tests', () => {
 
   describe('PUT /api/v1/requests/admin/:id/status - Admin: Update Status', () => {
     test('should approve a pending request', async () => {
-      mockPrisma.requests.findUnique.mockResolvedValue({
+      mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
         status: 'pending',
-        user_type_id: 1,
-        user_type: { id: 1, type_name: 'student' }
+        userTypeId: 1,
+        userType: { id: 1, typeName: 'student' }
       });
 
-      mockPrisma.requests.update.mockResolvedValue({
+      mockPrisma.request.update.mockResolvedValue({
         id: 1,
         status: 'approved',
-        admin_notes: 'تم القبول',
-        processed_at: new Date('2026-02-14'),
-        updated_at: new Date('2026-02-14')
+        adminNotes: 'تم القبول',
+        processedAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14')
       });
 
       const response = await request(app)
@@ -502,19 +502,19 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should reject a pending request', async () => {
-      mockPrisma.requests.findUnique.mockResolvedValue({
+      mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
         status: 'pending',
-        user_type_id: 1,
-        user_type: { id: 1, type_name: 'student' }
+        userTypeId: 1,
+        userType: { id: 1, typeName: 'student' }
       });
 
-      mockPrisma.requests.update.mockResolvedValue({
+      mockPrisma.request.update.mockResolvedValue({
         id: 1,
         status: 'rejected',
-        admin_notes: 'بيانات ناقصة',
-        processed_at: new Date('2026-02-14'),
-        updated_at: new Date('2026-02-14')
+        adminNotes: 'بيانات ناقصة',
+        processedAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14')
       });
 
       const response = await request(app)
@@ -528,11 +528,11 @@ describe('Requests Integration Tests', () => {
     });
 
     test('should return 409 for already processed request', async () => {
-      mockPrisma.requests.findUnique.mockResolvedValue({
+      mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
         status: 'approved',
-        processed_at: new Date('2026-02-13'),
-        user_type: { id: 1, type_name: 'student' }
+        processedAt: new Date('2026-02-13'),
+        userType: { id: 1, typeName: 'student' }
       });
 
       const response = await request(app)

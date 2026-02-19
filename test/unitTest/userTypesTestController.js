@@ -1,6 +1,6 @@
 // Mock Prisma methods
 const mockPrisma = {
-  user_types: {
+  userType: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -8,10 +8,10 @@ const mockPrisma = {
     update: jest.fn(),
     count: jest.fn()
   },
-  fields_master: {
+  fieldsMaster: {
     findMany: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     createMany: jest.fn(),
     deleteMany: jest.fn()
   },
@@ -45,9 +45,9 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    Object.values(mockPrisma.user_types).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.fields_master).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userType).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.fieldsMaster).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(mock => mock.mockReset());
     mockPrisma.$transaction.mockReset();
     
     // Mock request object
@@ -73,31 +73,31 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
       const mockUserTypes = [
         {
           id: 1,
-          type_name: 'student',
-          is_active: true,
-          created_at: new Date('2026-01-15'),
-          updated_at: new Date('2026-01-15'),
-          user_type_fields: [
+          typeName: 'student',
+          isActive: true,
+          createdAt: new Date('2026-01-15'),
+          updatedAt: new Date('2026-01-15'),
+          userTypeFields: [
             {
-              field_id: 1,
-              is_required: true,
-              field_order: 1,
-              fields_master: {
-                field_name: 'name',
-                field_label: 'الاسم الكامل',
-                field_type: 'text'
+              fieldId: 1,
+              isRequired: true,
+              fieldOrder: 1,
+              field: {
+                fieldName: 'name',
+                fieldLabel: 'الاسم الكامل',
+                fieldType: 'text'
               }
             }
           ],
           requests: [
-            { id: 1, status: 'pending', created_at: new Date('2026-02-01') },
-            { id: 2, status: 'approved', created_at: new Date('2026-02-02') }
+            { id: 1, status: 'pending', createdAt: new Date('2026-02-01') },
+            { id: 2, status: 'approved', createdAt: new Date('2026-02-02') }
           ]
         }
       ];
 
-      mockPrisma.user_types.findMany.mockResolvedValue(mockUserTypes);
-      mockPrisma.user_types.count
+      mockPrisma.userType.findMany.mockResolvedValue(mockUserTypes);
+      mockPrisma.userType.count
         .mockResolvedValueOnce(1) // total count
         .mockResolvedValueOnce(1) // active count
         .mockResolvedValueOnce(0); // inactive count
@@ -144,8 +144,8 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     test('should handle search and filtering parameters', async () => {
       const mockUserTypes = [];
       
-      mockPrisma.user_types.findMany.mockResolvedValue(mockUserTypes);
-      mockPrisma.user_types.count
+      mockPrisma.userType.findMany.mockResolvedValue(mockUserTypes);
+      mockPrisma.userType.count
         .mockResolvedValueOnce(0) // total count
         .mockResolvedValueOnce(1) // active count
         .mockResolvedValueOnce(0); // inactive count
@@ -161,16 +161,16 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
 
       await getUserTypes(mockReq, mockRes);
 
-      expect(mockPrisma.user_types.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.userType.findMany).toHaveBeenCalledWith({
         where: {
-          type_name: {
+          typeName: {
             contains: 'student',
             mode: 'insensitive'
           },
-          is_active: true
+          isActive: true
         },
         orderBy: {
-          type_name: 'asc'
+          typeName: 'asc'
         },
         skip: 0,
         take: 25,
@@ -185,37 +185,37 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     test('should successfully retrieve specific user type details', async () => {
       const mockUserType = {
         id: 1,
-        type_name: 'student',
-        is_active: true,
-        created_at: new Date('2026-01-15'),
-        updated_at: new Date('2026-01-15'),
-        user_type_fields: [
+        typeName: 'student',
+        isActive: true,
+        createdAt: new Date('2026-01-15'),
+        updatedAt: new Date('2026-01-15'),
+        userTypeFields: [
           {
-            field_id: 1,
-            is_required: true,
-            field_order: 1,
-            fields_master: {
-              field_name: 'name',
-              field_label: 'الاسم الكامل',
-              field_type: 'text',
-              field_options: null
+            fieldId: 1,
+            isRequired: true,
+            fieldOrder: 1,
+            field: {
+              fieldName: 'name',
+              fieldLabel: 'الاسم الكامل',
+              fieldType: 'text',
+              fieldOptions: null
             }
           }
         ],
         requests: [
-          { id: 1, status: 'pending', created_at: new Date('2026-02-01') }
+          { id: 1, status: 'pending', createdAt: new Date('2026-02-01') }
         ]
       };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue(mockUserType);
+      mockPrisma.userType.findUnique.mockResolvedValue(mockUserType);
       mockReq.params = { id: '1' };
 
       await getUserType(mockReq, mockRes);
 
-      expect(mockPrisma.user_types.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.userType.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
         include: expect.objectContaining({
-          user_type_fields: expect.any(Object),
+          userTypeFields: expect.any(Object),
           requests: expect.any(Object)
         })
       });
@@ -266,7 +266,7 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     });
 
     test('should handle user type not found', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
       mockReq.params = { id: '999' };
 
       await getUserType(mockReq, mockRes);
@@ -311,12 +311,12 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
         }
       ];
 
-      mockPrisma.fields_master.findMany.mockResolvedValue(mockFields);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue(mockFields);
 
       await getFieldsMaster(mockReq, mockRes);
 
-      expect(mockPrisma.fields_master.findMany).toHaveBeenCalledWith({
-        orderBy: { field_name: 'asc' }
+      expect(mockPrisma.fieldsMaster.findMany).toHaveBeenCalledWith({
+        orderBy: { fieldName: 'asc' }
       });
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
@@ -339,7 +339,7 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     });
 
     test('should handle empty fields master table', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
 
       await getFieldsMaster(mockReq, mockRes);
 
@@ -382,24 +382,24 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
         { id: 2, field_name: 'email' }
       ];
 
-      mockPrisma.user_types.findFirst.mockResolvedValue(null); // No duplicate
-      mockPrisma.fields_master.findMany.mockResolvedValue(mockValidFields);
+      mockPrisma.userType.findFirst.mockResolvedValue(null); // No duplicate
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue(mockValidFields);
       mockPrisma.$transaction.mockResolvedValue(mockCreatedUserType);
 
       mockReq.body = requestData;
 
       await createUserType(mockReq, mockRes);
 
-      expect(mockPrisma.user_types.findFirst).toHaveBeenCalledWith({
+      expect(mockPrisma.userType.findFirst).toHaveBeenCalledWith({
         where: {
-          type_name: {
+          typeName: {
             equals: 'contractor',
             mode: 'insensitive'
           }
         }
       });
 
-      expect(mockPrisma.fields_master.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.fieldsMaster.findMany).toHaveBeenCalledWith({
         where: {
           id: { in: [1, 2] }
         }
@@ -464,7 +464,7 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
         type_name: 'student'
       };
 
-      mockPrisma.user_types.findFirst.mockResolvedValue(mockExistingUserType);
+      mockPrisma.userType.findFirst.mockResolvedValue(mockExistingUserType);
 
       mockReq.body = requestData;
 
@@ -500,23 +500,23 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
 
       const mockExistingUserType = {
         id: 2,
-        type_name: 'contractor',
-        is_active: true,
-        user_type_fields: [
-          { field_id: 1, is_required: true, field_order: 1 },
-          { field_id: 2, is_required: true, field_order: 2 }
+        typeName: 'contractor',
+        isActive: true,
+        userTypeFields: [
+          { fieldId: 1, isRequired: true, fieldOrder: 1 },
+          { fieldId: 2, isRequired: true, fieldOrder: 2 }
         ]
       };
 
       const mockUpdatedUserType = {
         id: 2,
-        type_name: 'contractor_updated',
-        is_active: true,
-        updated_at: new Date()
+        typeName: 'contractor_updated',
+        isActive: true,
+        updatedAt: new Date()
       };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue(mockExistingUserType);
-      mockPrisma.user_types.findFirst.mockResolvedValue(null); // No duplicate
+      mockPrisma.userType.findUnique.mockResolvedValue(mockExistingUserType);
+      mockPrisma.userType.findFirst.mockResolvedValue(null); // No duplicate
       mockPrisma.$transaction.mockResolvedValue(mockUpdatedUserType);
 
       mockReq.params = { id: '2' };
@@ -554,17 +554,17 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     test('should successfully retrieve deletion impact information', async () => {
       const mockUserType = {
         id: 2,
-        type_name: 'contractor',
-        is_active: true,
-        created_at: new Date('2026-01-20'),
+        typeName: 'contractor',
+        isActive: true,
+        createdAt: new Date('2026-01-20'),
         requests: [
-          { id: 1, status: 'pending', created_at: new Date('2026-02-06') },
-          { id: 2, status: 'approved', created_at: new Date('2026-02-05') }
+          { id: 1, status: 'pending', createdAt: new Date('2026-02-06') },
+          { id: 2, status: 'approved', createdAt: new Date('2026-02-05') }
         ]
       };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue(mockUserType);
-      mockPrisma.user_types.count.mockResolvedValue(2); // Other active user types exist
+      mockPrisma.userType.findUnique.mockResolvedValue(mockUserType);
+      mockPrisma.userType.count.mockResolvedValue(2); // Other active user types exist
 
       mockReq.params = { id: '2' };
 
@@ -603,22 +603,22 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     test('should successfully delete user type with confirmation', async () => {
       const mockUserType = {
         id: 2,
-        type_name: 'contractor',
-        is_active: true,
+        typeName: 'contractor',
+        isActive: true,
         requests: [
-          { id: 1, status: 'approved', created_at: new Date('2026-02-01') }
+          { id: 1, status: 'approved', createdAt: new Date('2026-02-01') }
         ]
       };
 
       const mockDeletedUserType = {
         id: 2,
-        type_name: 'contractor',
-        is_active: false,
-        updated_at: new Date()
+        typeName: 'contractor',
+        isActive: false,
+        updatedAt: new Date()
       };
 
-      mockPrisma.user_types.count.mockResolvedValue(2); // Other active types exist
-      mockPrisma.user_types.findUnique.mockResolvedValue(mockUserType);
+      mockPrisma.userType.count.mockResolvedValue(2); // Other active types exist
+      mockPrisma.userType.findUnique.mockResolvedValue(mockUserType);
       mockPrisma.$transaction.mockResolvedValue(mockDeletedUserType);
 
       mockReq.params = { id: '2' };
@@ -652,7 +652,7 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     });
 
     test('should prevent deletion of last user type', async () => {
-      mockPrisma.user_types.count.mockResolvedValue(0); // No other active types
+      mockPrisma.userType.count.mockResolvedValue(0); // No other active types
 
       mockReq.params = { id: '1' };
       mockReq.body = { confirmed: true };
@@ -689,13 +689,13 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     test('should successfully update user type status to inactive', async () => {
       const mockUpdatedUserType = {
         id: 2,
-        type_name: 'contractor',
-        is_active: false,
-        updated_at: new Date()
+        typeName: 'contractor',
+        isActive: false,
+        updatedAt: new Date()
       };
 
-      mockPrisma.user_types.count.mockResolvedValue(2); // Other active types exist
-      mockPrisma.user_types.update.mockResolvedValue(mockUpdatedUserType);
+      mockPrisma.userType.count.mockResolvedValue(2); // Other active types exist
+      mockPrisma.userType.update.mockResolvedValue(mockUpdatedUserType);
 
       mockReq.params = { id: '2' };
       mockReq.body = { is_active: false };
@@ -727,12 +727,12 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     test('should successfully update user type status to active', async () => {
       const mockUpdatedUserType = {
         id: 2,
-        type_name: 'contractor',
-        is_active: true,
-        updated_at: new Date()
+        typeName: 'contractor',
+        isActive: true,
+        updatedAt: new Date()
       };
 
-      mockPrisma.user_types.update.mockResolvedValue(mockUpdatedUserType);
+      mockPrisma.userType.update.mockResolvedValue(mockUpdatedUserType);
 
       mockReq.params = { id: '2' };
       mockReq.body = { is_active: true };
@@ -751,7 +751,7 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
     });
 
     test('should prevent deactivating last active user type', async () => {
-      mockPrisma.user_types.count.mockResolvedValue(0); // No other active types
+      mockPrisma.userType.count.mockResolvedValue(0); // No other active types
 
       mockReq.params = { id: '1' };
       mockReq.body = { is_active: false };
@@ -806,7 +806,7 @@ describe('User Types Controllers - Error Handling', () => {
 
   test('should handle database errors gracefully', async () => {
     const dbError = new Error('Database connection failed');
-    mockPrisma.user_types.findMany.mockRejectedValue(dbError);
+    mockPrisma.userType.findMany.mockRejectedValue(dbError);
 
     await getUserTypes(mockReq, mockRes);
 
@@ -837,8 +837,8 @@ describe('User Types Controllers - Error Handling', () => {
     const mockValidFields = [{ id: 1, field_name: 'name' }];
     const transactionError = new Error('Transaction failed');
 
-    mockPrisma.user_types.findFirst.mockResolvedValue(null);
-    mockPrisma.fields_master.findMany.mockResolvedValue(mockValidFields);
+    mockPrisma.userType.findFirst.mockResolvedValue(null);
+    mockPrisma.fieldsMaster.findMany.mockResolvedValue(mockValidFields);
     mockPrisma.$transaction.mockRejectedValue(transactionError);
 
     mockReq.body = requestData;

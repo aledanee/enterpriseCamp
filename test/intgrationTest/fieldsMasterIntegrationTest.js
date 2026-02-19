@@ -4,13 +4,13 @@ const jwt = require('jsonwebtoken');
 
 // Mock Prisma
 const mockPrisma = {
-  fields_master: {
+  fieldsMaster: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     count: jest.fn(),
     groupBy: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     findMany: jest.fn()
   }
 };
@@ -50,8 +50,8 @@ describe('Fields Master Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    Object.values(mockPrisma.fields_master).forEach(fn => fn.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.fieldsMaster).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(fn => fn.mockReset());
   });
 
   // ───────────────────────────────────────────────
@@ -84,38 +84,38 @@ describe('Fields Master Integration Tests', () => {
     const sampleFields = [
       {
         id: 1,
-        field_name: 'name',
-        field_label: 'الاسم الكامل',
-        field_type: 'text',
-        field_options: null,
-        created_at: new Date('2026-01-01'),
-        updated_at: new Date('2026-01-01'),
-        user_type_fields: [
+        fieldName: 'name',
+        fieldLabel: 'الاسم الكامل',
+        fieldType: 'text',
+        fieldOptions: null,
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+        userTypeFields: [
           {
-            is_required: true,
-            field_order: 1,
-            user_type: { id: 1, type_name: 'student', is_active: true }
+            isRequired: true,
+            fieldOrder: 1,
+            userType: { id: 1, typeName: 'student', isActive: true }
           }
         ]
       },
       {
         id: 2,
-        field_name: 'email',
-        field_label: 'البريد الإلكتروني',
-        field_type: 'email',
-        field_options: null,
-        created_at: new Date('2026-01-01'),
-        updated_at: new Date('2026-01-01'),
-        user_type_fields: []
+        fieldName: 'email',
+        fieldLabel: 'البريد الإلكتروني',
+        fieldType: 'email',
+        fieldOptions: null,
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+        userTypeFields: []
       }
     ];
 
     test('should return paginated list of fields with usage stats', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue(sampleFields);
-      mockPrisma.fields_master.count.mockResolvedValue(2);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([
-        { field_type: 'text', _count: { id: 1 } },
-        { field_type: 'email', _count: { id: 1 } }
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue(sampleFields);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(2);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([
+        { fieldType: 'text', _count: { id: 1 } },
+        { fieldType: 'email', _count: { id: 1 } }
       ]);
 
       const response = await request(app)
@@ -143,32 +143,32 @@ describe('Fields Master Integration Tests', () => {
     });
 
     test('should handle search and field_type filter', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
-      mockPrisma.fields_master.count.mockResolvedValue(0);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(0);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([]);
 
       await request(app)
         .get('/api/v1/fields-master?search=email&field_type=email')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(mockPrisma.fields_master.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.fieldsMaster.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
             OR: [
-              { field_name: { contains: 'email', mode: 'insensitive' } },
-              { field_label: { contains: 'email', mode: 'insensitive' } }
+              { fieldName: { contains: 'email', mode: 'insensitive' } },
+              { fieldLabel: { contains: 'email', mode: 'insensitive' } }
             ],
-            field_type: 'email'
+            fieldType: 'email'
           }
         })
       );
     });
 
     test('should handle empty fields list', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
-      mockPrisma.fields_master.count.mockResolvedValue(0);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(0);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/v1/fields-master')
@@ -181,7 +181,7 @@ describe('Fields Master Integration Tests', () => {
     });
 
     test('should handle database error gracefully', async () => {
-      mockPrisma.fields_master.findMany.mockRejectedValue(new Error('DB connection failed'));
+      mockPrisma.fieldsMaster.findMany.mockRejectedValue(new Error('DB connection failed'));
 
       const response = await request(app)
         .get('/api/v1/fields-master')
@@ -199,28 +199,28 @@ describe('Fields Master Integration Tests', () => {
   describe('GET /api/v1/fields-master/:id - Field Detail', () => {
     const sampleField = {
       id: 1,
-      field_name: 'name',
-      field_label: 'الاسم الكامل',
-      field_type: 'text',
-      field_options: null,
-      created_at: new Date('2026-01-01'),
-      updated_at: new Date('2026-01-01'),
-      user_type_fields: [
+      fieldName: 'name',
+      fieldLabel: 'الاسم الكامل',
+      fieldType: 'text',
+      fieldOptions: null,
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-01'),
+      userTypeFields: [
         {
-          is_required: true,
-          field_order: 1,
-          user_type: { id: 1, type_name: 'student', is_active: true, created_at: new Date('2026-01-01') }
+          isRequired: true,
+          fieldOrder: 1,
+          userType: { id: 1, typeName: 'student', isActive: true, createdAt: new Date('2026-01-01') }
         },
         {
-          is_required: false,
-          field_order: 2,
-          user_type: { id: 2, type_name: 'agent', is_active: false, created_at: new Date('2026-01-15') }
+          isRequired: false,
+          fieldOrder: 2,
+          userType: { id: 2, typeName: 'agent', isActive: false, createdAt: new Date('2026-01-15') }
         }
       ]
     };
 
     test('should return field details with usage information', async () => {
-      mockPrisma.fields_master.findUnique.mockResolvedValue(sampleField);
+      mockPrisma.fieldsMaster.findUnique.mockResolvedValue(sampleField);
 
       const response = await request(app)
         .get('/api/v1/fields-master/1')
@@ -243,7 +243,7 @@ describe('Fields Master Integration Tests', () => {
     });
 
     test('should return 404 for non-existent field', async () => {
-      mockPrisma.fields_master.findUnique.mockResolvedValue(null);
+      mockPrisma.fieldsMaster.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .get('/api/v1/fields-master/999')

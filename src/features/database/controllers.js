@@ -347,14 +347,14 @@ const getDatabaseStats = async (req, res) => {
       approvedRequestsCount,
       rejectedRequestsCount
     ] = await Promise.all([
-      prisma.user_types.count(),
-      prisma.user_types.count({ where: { is_active: true } }),
-      prisma.fields_master.count(),
-      prisma.user_type_fields.count(),
-      prisma.requests.count(),
-      prisma.requests.count({ where: { status: 'pending' } }),
-      prisma.requests.count({ where: { status: 'approved' } }),
-      prisma.requests.count({ where: { status: 'rejected' } })
+      prisma.userType.count(),
+      prisma.userType.count({ where: { isActive: true } }),
+      prisma.fieldsMaster.count(),
+      prisma.userTypeField.count(),
+      prisma.request.count(),
+      prisma.request.count({ where: { status: 'pending' } }),
+      prisma.request.count({ where: { status: 'approved' } }),
+      prisma.request.count({ where: { status: 'rejected' } })
     ]);
 
     // Get recent activity stats
@@ -364,9 +364,9 @@ const getDatabaseStats = async (req, res) => {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const [requests24h, requests7d, requests30d] = await Promise.all([
-      prisma.requests.count({ where: { created_at: { gte: twentyFourHoursAgo } } }),
-      prisma.requests.count({ where: { created_at: { gte: sevenDaysAgo } } }),
-      prisma.requests.count({ where: { created_at: { gte: thirtyDaysAgo } } })
+      prisma.request.count({ where: { createdAt: { gte: twentyFourHoursAgo } } }),
+      prisma.request.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+      prisma.request.count({ where: { createdAt: { gte: thirtyDaysAgo } } })
     ]);
 
     // Get database size info
@@ -384,22 +384,22 @@ const getDatabaseStats = async (req, res) => {
     `;
 
     // Get requests per user type breakdown
-    const requestsByType = await prisma.requests.groupBy({
-      by: ['user_type_id'],
+    const requestsByType = await prisma.request.groupBy({
+      by: ['userTypeId'],
       _count: { id: true }
     });
 
     // Enrich with user type names
-    const userTypes = await prisma.user_types.findMany({
-      select: { id: true, type_name: true }
+    const userTypes = await prisma.userType.findMany({
+      select: { id: true, typeName: true }
     });
 
     const userTypeMap = {};
-    userTypes.forEach(ut => { userTypeMap[ut.id] = ut.type_name; });
+    userTypes.forEach(ut => { userTypeMap[ut.id] = ut.typeName; });
 
     const requestsByTypeEnriched = requestsByType.map(item => ({
-      user_type_id: item.user_type_id,
-      type_name: userTypeMap[item.user_type_id] || 'Deleted Type',
+      user_type_id: item.userTypeId,
+      type_name: userTypeMap[item.userTypeId] || 'Deleted Type',
       request_count: item._count.id
     }));
 

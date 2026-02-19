@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 // Mock Prisma (shared singleton) before importing anything that uses it
 const mockPrisma = {
-  user_types: {
+  userType: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -12,10 +12,10 @@ const mockPrisma = {
     update: jest.fn(),
     count: jest.fn()
   },
-  fields_master: {
+  fieldsMaster: {
     findMany: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     createMany: jest.fn(),
     deleteMany: jest.fn()
   },
@@ -59,9 +59,9 @@ describe('User Types Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    Object.values(mockPrisma.user_types).forEach(fn => fn.mockReset());
-    Object.values(mockPrisma.fields_master).forEach(fn => fn.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.userType).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.fieldsMaster).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(fn => fn.mockReset());
     mockPrisma.$transaction.mockReset();
   });
 
@@ -111,36 +111,36 @@ describe('User Types Integration Tests', () => {
     const sampleUserTypes = [
       {
         id: 1,
-        type_name: 'student',
-        is_active: true,
-        created_at: new Date('2026-01-01'),
-        updated_at: new Date('2026-01-01'),
-        user_type_fields: [
+        typeName: 'student',
+        isActive: true,
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+        userTypeFields: [
           {
-            field_id: 1,
-            is_required: true,
-            field_order: 1,
-            fields_master: { field_name: 'first_name', field_label: 'First Name', field_type: 'text' }
+            fieldId: 1,
+            isRequired: true,
+            fieldOrder: 1,
+            field: { fieldName: 'first_name', fieldLabel: 'First Name', fieldType: 'text' }
           }
         ],
         requests: [
-          { id: 1, status: 'pending', created_at: new Date('2026-02-01') }
+          { id: 1, status: 'pending', createdAt: new Date('2026-02-01') }
         ]
       },
       {
         id: 2,
-        type_name: 'employee',
-        is_active: true,
-        created_at: new Date('2026-01-15'),
-        updated_at: new Date('2026-01-15'),
-        user_type_fields: [],
+        typeName: 'employee',
+        isActive: true,
+        createdAt: new Date('2026-01-15'),
+        updatedAt: new Date('2026-01-15'),
+        userTypeFields: [],
         requests: []
       }
     ];
 
     test('should return paginated list of user types', async () => {
-      mockPrisma.user_types.findMany.mockResolvedValue(sampleUserTypes);
-      mockPrisma.user_types.count
+      mockPrisma.userType.findMany.mockResolvedValue(sampleUserTypes);
+      mockPrisma.userType.count
         .mockResolvedValueOnce(2)   // totalCount
         .mockResolvedValueOnce(2)   // activeCount
         .mockResolvedValueOnce(0);  // inactiveCount
@@ -163,8 +163,8 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should pass search query parameter to Prisma', async () => {
-      mockPrisma.user_types.findMany.mockResolvedValue([]);
-      mockPrisma.user_types.count
+      mockPrisma.userType.findMany.mockResolvedValue([]);
+      mockPrisma.userType.count
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(0);
@@ -174,19 +174,19 @@ describe('User Types Integration Tests', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(mockPrisma.user_types.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.userType.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            type_name: { contains: 'student', mode: 'insensitive' },
-            is_active: true
+            typeName: { contains: 'student', mode: 'insensitive' },
+            isActive: true
           }
         })
       );
     });
 
     test('should handle pagination parameters', async () => {
-      mockPrisma.user_types.findMany.mockResolvedValue([]);
-      mockPrisma.user_types.count
+      mockPrisma.userType.findMany.mockResolvedValue([]);
+      mockPrisma.userType.count
         .mockResolvedValueOnce(50)
         .mockResolvedValueOnce(40)
         .mockResolvedValueOnce(10);
@@ -196,7 +196,7 @@ describe('User Types Integration Tests', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(mockPrisma.user_types.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.userType.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 10,
           take: 10
@@ -208,8 +208,8 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should cap per_page at 100', async () => {
-      mockPrisma.user_types.findMany.mockResolvedValue([]);
-      mockPrisma.user_types.count
+      mockPrisma.userType.findMany.mockResolvedValue([]);
+      mockPrisma.userType.count
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(0);
@@ -219,7 +219,7 @@ describe('User Types Integration Tests', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(mockPrisma.user_types.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.userType.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           take: 100
         })
@@ -227,8 +227,8 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return empty list when no user types exist', async () => {
-      mockPrisma.user_types.findMany.mockResolvedValue([]);
-      mockPrisma.user_types.count
+      mockPrisma.userType.findMany.mockResolvedValue([]);
+      mockPrisma.userType.count
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(0);
@@ -249,30 +249,30 @@ describe('User Types Integration Tests', () => {
   describe('GET /api/v1/user-types/:id - Get User Type Detail', () => {
     const sampleUserType = {
       id: 1,
-      type_name: 'student',
-      is_active: true,
-      created_at: new Date('2026-01-01'),
-      updated_at: new Date('2026-01-01'),
-      user_type_fields: [
+      typeName: 'student',
+      isActive: true,
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-01'),
+      userTypeFields: [
         {
-          field_id: 1,
-          is_required: true,
-          field_order: 1,
-          fields_master: {
-            field_name: 'first_name',
-            field_label: 'First Name',
-            field_type: 'text',
-            field_options: null
+          fieldId: 1,
+          isRequired: true,
+          fieldOrder: 1,
+          field: {
+            fieldName: 'first_name',
+            fieldLabel: 'First Name',
+            fieldType: 'text',
+            fieldOptions: null
           }
         }
       ],
       requests: [
-        { id: 1, status: 'approved', created_at: new Date('2026-02-01') }
+        { id: 1, status: 'approved', createdAt: new Date('2026-02-01') }
       ]
     };
 
     test('should return detailed user type with fields and analytics', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue(sampleUserType);
+      mockPrisma.userType.findUnique.mockResolvedValue(sampleUserType);
 
       const response = await request(app)
         .get('/api/v1/user-types/1')
@@ -300,7 +300,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return 404 for non-existent user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .get('/api/v1/user-types/999')
@@ -336,13 +336,13 @@ describe('User Types Integration Tests', () => {
   // ───────────────────────────────────────────────
   describe('GET /api/v1/user-types/fields-master - Get Available Fields', () => {
     const sampleFields = [
-      { id: 1, field_name: 'email', field_label: 'Email', field_type: 'email', field_options: null },
-      { id: 2, field_name: 'first_name', field_label: 'First Name', field_type: 'text', field_options: null },
-      { id: 3, field_name: 'phone', field_label: 'Phone', field_type: 'tel', field_options: null }
+      { id: 1, fieldName: 'email', fieldLabel: 'Email', fieldType: 'email', fieldOptions: null },
+      { id: 2, fieldName: 'first_name', fieldLabel: 'First Name', fieldType: 'text', fieldOptions: null },
+      { id: 3, fieldName: 'phone', fieldLabel: 'Phone', fieldType: 'tel', fieldOptions: null }
     ];
 
     test('should return all available fields', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue(sampleFields);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue(sampleFields);
 
       const response = await request(app)
         .get('/api/v1/user-types/fields-master')
@@ -355,20 +355,20 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return fields sorted by field_name', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue(sampleFields);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue(sampleFields);
 
       await request(app)
         .get('/api/v1/user-types/fields-master')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(mockPrisma.fields_master.findMany).toHaveBeenCalledWith({
-        orderBy: { field_name: 'asc' }
+      expect(mockPrisma.fieldsMaster.findMany).toHaveBeenCalledWith({
+        orderBy: { fieldName: 'asc' }
       });
     });
 
     test('should return 404 when no fields exist', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/v1/user-types/fields-master')
@@ -393,19 +393,19 @@ describe('User Types Integration Tests', () => {
     };
 
     test('should create a new user type successfully', async () => {
-      mockPrisma.user_types.findFirst.mockResolvedValue(null); // no duplicate
-      mockPrisma.fields_master.findMany.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+      mockPrisma.userType.findFirst.mockResolvedValue(null); // no duplicate
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([{ id: 1 }, { id: 2 }]);
       mockPrisma.$transaction.mockImplementation(async (cb) => {
         return cb({
-          user_types: {
+          userType: {
             create: jest.fn().mockResolvedValue({
               id: 3,
-              type_name: 'contractor',
-              is_active: true,
-              created_at: new Date()
+              typeName: 'contractor',
+              isActive: true,
+              createdAt: new Date()
             })
           },
-          user_type_fields: {
+          userTypeField: {
             createMany: jest.fn().mockResolvedValue({ count: 2 })
           }
         });
@@ -429,7 +429,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should reject duplicate user type name', async () => {
-      mockPrisma.user_types.findFirst.mockResolvedValue({ id: 1, type_name: 'contractor' });
+      mockPrisma.userType.findFirst.mockResolvedValue({ id: 1, typeName: 'contractor' });
 
       const response = await request(app)
         .post('/api/v1/user-types')
@@ -485,7 +485,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should reject duplicate field_order values', async () => {
-      mockPrisma.user_types.findFirst.mockResolvedValue(null);
+      mockPrisma.userType.findFirst.mockResolvedValue(null);
 
       const response = await request(app)
         .post('/api/v1/user-types')
@@ -504,8 +504,8 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should reject invalid field IDs', async () => {
-      mockPrisma.user_types.findFirst.mockResolvedValue(null);
-      mockPrisma.fields_master.findMany.mockResolvedValue([{ id: 1 }]); // only 1 of 2 found
+      mockPrisma.userType.findFirst.mockResolvedValue(null);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([{ id: 1 }]); // only 1 of 2 found
 
       const response = await request(app)
         .post('/api/v1/user-types')
@@ -531,25 +531,25 @@ describe('User Types Integration Tests', () => {
     };
 
     test('should update user type successfully', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
+      mockPrisma.userType.findUnique.mockResolvedValue({
         id: 1,
-        type_name: 'student',
-        is_active: true,
-        user_type_fields: [{ field_id: 1 }, { field_id: 2 }]
+        typeName: 'student',
+        isActive: true,
+        userTypeFields: [{ fieldId: 1 }, { fieldId: 2 }]
       });
-      mockPrisma.user_types.findFirst.mockResolvedValue(null); // no duplicate name
+      mockPrisma.userType.findFirst.mockResolvedValue(null); // no duplicate name
 
       mockPrisma.$transaction.mockImplementation(async (cb) => {
         return cb({
-          user_types: {
+          userType: {
             update: jest.fn().mockResolvedValue({
               id: 1,
-              type_name: 'student_v2',
-              is_active: true,
-              updated_at: new Date()
+              typeName: 'student_v2',
+              isActive: true,
+              updatedAt: new Date()
             })
           },
-          user_type_fields: {
+          userTypeField: {
             deleteMany: jest.fn().mockResolvedValue({ count: 2 }),
             createMany: jest.fn().mockResolvedValue({ count: 2 })
           }
@@ -573,7 +573,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return 404 when updating non-existent user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .put('/api/v1/user-types/999')
@@ -586,12 +586,12 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should reject duplicate name when updating', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
+      mockPrisma.userType.findUnique.mockResolvedValue({
         id: 1,
-        type_name: 'student',
-        user_type_fields: []
+        typeName: 'student',
+        userTypeFields: []
       });
-      mockPrisma.user_types.findFirst.mockResolvedValue({ id: 2, type_name: 'student_v2' });
+      mockPrisma.userType.findFirst.mockResolvedValue({ id: 2, typeName: 'student_v2' });
 
       const response = await request(app)
         .put('/api/v1/user-types/1')
@@ -618,17 +618,17 @@ describe('User Types Integration Tests', () => {
   // ───────────────────────────────────────────────
   describe('GET /api/v1/user-types/:id/delete-info - Deletion Impact', () => {
     test('should return deletion impact information', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
+      mockPrisma.userType.findUnique.mockResolvedValue({
         id: 1,
-        type_name: 'student',
-        is_active: true,
-        created_at: new Date('2026-01-01'),
+        typeName: 'student',
+        isActive: true,
+        createdAt: new Date('2026-01-01'),
         requests: [
-          { id: 1, status: 'pending', created_at: new Date('2026-02-07') },
-          { id: 2, status: 'approved', created_at: new Date('2026-01-15') }
+          { id: 1, status: 'pending', createdAt: new Date('2026-02-07') },
+          { id: 2, status: 'approved', createdAt: new Date('2026-01-15') }
         ]
       });
-      mockPrisma.user_types.count.mockResolvedValue(2); // other active types
+      mockPrisma.userType.count.mockResolvedValue(2); // other active types
 
       const response = await request(app)
         .get('/api/v1/user-types/1/delete-info')
@@ -648,14 +648,14 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should flag when it is the last active user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue({
+      mockPrisma.userType.findUnique.mockResolvedValue({
         id: 1,
-        type_name: 'student',
-        is_active: true,
-        created_at: new Date(),
+        typeName: 'student',
+        isActive: true,
+        createdAt: new Date(),
         requests: []
       });
-      mockPrisma.user_types.count.mockResolvedValue(0); // no other active types
+      mockPrisma.userType.count.mockResolvedValue(0); // no other active types
 
       const response = await request(app)
         .get('/api/v1/user-types/1/delete-info')
@@ -666,7 +666,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return 404 for non-existent user type', async () => {
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .get('/api/v1/user-types/999/delete-info')
@@ -682,24 +682,24 @@ describe('User Types Integration Tests', () => {
   // ───────────────────────────────────────────────
   describe('DELETE /api/v1/user-types/:id - Delete User Type', () => {
     test('should soft-delete user type with confirmation', async () => {
-      mockPrisma.user_types.count.mockResolvedValue(2); // not last type
-      mockPrisma.user_types.findUnique.mockResolvedValue({
+      mockPrisma.userType.count.mockResolvedValue(2); // not last type
+      mockPrisma.userType.findUnique.mockResolvedValue({
         id: 1,
-        type_name: 'contractor',
-        is_active: true,
-        requests: [{ id: 1, status: 'approved', created_at: new Date() }]
+        typeName: 'contractor',
+        isActive: true,
+        requests: [{ id: 1, status: 'approved', createdAt: new Date() }]
       });
       mockPrisma.$transaction.mockImplementation(async (cb) => {
         return cb({
-          user_types: {
+          userType: {
             update: jest.fn().mockResolvedValue({
               id: 1,
-              type_name: 'contractor',
-              is_active: false,
-              updated_at: new Date()
+              typeName: 'contractor',
+              isActive: false,
+              updatedAt: new Date()
             })
           },
-          user_type_fields: {
+          userTypeField: {
             deleteMany: jest.fn().mockResolvedValue({ count: 3 })
           }
         });
@@ -729,7 +729,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should prevent deleting last active user type', async () => {
-      mockPrisma.user_types.count.mockResolvedValue(0); // last type
+      mockPrisma.userType.count.mockResolvedValue(0); // last type
 
       const response = await request(app)
         .delete('/api/v1/user-types/1')
@@ -743,8 +743,8 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return 404 when deleting non-existent user type', async () => {
-      mockPrisma.user_types.count.mockResolvedValue(2);
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.count.mockResolvedValue(2);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .delete('/api/v1/user-types/999')
@@ -761,12 +761,12 @@ describe('User Types Integration Tests', () => {
   // ───────────────────────────────────────────────
   describe('PUT /api/v1/user-types/:id/status - Toggle Status', () => {
     test('should deactivate a user type', async () => {
-      mockPrisma.user_types.count.mockResolvedValue(2); // not last active
-      mockPrisma.user_types.update.mockResolvedValue({
+      mockPrisma.userType.count.mockResolvedValue(2); // not last active
+      mockPrisma.userType.update.mockResolvedValue({
         id: 1,
-        type_name: 'student',
-        is_active: false,
-        updated_at: new Date()
+        typeName: 'student',
+        isActive: false,
+        updatedAt: new Date()
       });
 
       const response = await request(app)
@@ -781,11 +781,11 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should activate a user type', async () => {
-      mockPrisma.user_types.update.mockResolvedValue({
+      mockPrisma.userType.update.mockResolvedValue({
         id: 1,
-        type_name: 'student',
-        is_active: true,
-        updated_at: new Date()
+        typeName: 'student',
+        isActive: true,
+        updatedAt: new Date()
       });
 
       const response = await request(app)
@@ -800,7 +800,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should prevent deactivating last active user type', async () => {
-      mockPrisma.user_types.count.mockResolvedValue(0); // no other active
+      mockPrisma.userType.count.mockResolvedValue(0); // no other active
 
       const response = await request(app)
         .put('/api/v1/user-types/1/status')
@@ -840,19 +840,19 @@ describe('User Types Integration Tests', () => {
   describe('Full CRUD Flow', () => {
     test('should complete create → read → update → deactivate → delete flow', async () => {
       // Step 1: Create
-      mockPrisma.user_types.findFirst.mockResolvedValue(null);
-      mockPrisma.fields_master.findMany.mockResolvedValue([{ id: 1 }]);
+      mockPrisma.userType.findFirst.mockResolvedValue(null);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([{ id: 1 }]);
       mockPrisma.$transaction.mockImplementation(async (cb) => {
         return cb({
-          user_types: {
+          userType: {
             create: jest.fn().mockResolvedValue({
-              id: 5, type_name: 'vendor', is_active: true, created_at: new Date()
+              id: 5, typeName: 'vendor', isActive: true, createdAt: new Date()
             }),
             update: jest.fn().mockResolvedValue({
-              id: 5, type_name: 'vendor', is_active: false, updated_at: new Date()
+              id: 5, typeName: 'vendor', isActive: false, updatedAt: new Date()
             })
           },
-          user_type_fields: {
+          userTypeField: {
             createMany: jest.fn().mockResolvedValue({ count: 1 }),
             deleteMany: jest.fn().mockResolvedValue({ count: 1 })
           }
@@ -868,10 +868,10 @@ describe('User Types Integration Tests', () => {
       expect(createRes.body.data.type_name).toBe('vendor');
 
       // Step 2: Read
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 5, type_name: 'vendor', is_active: true,
-        created_at: new Date(), updated_at: new Date(),
-        user_type_fields: [{ field_id: 1, is_required: true, field_order: 1, fields_master: { field_name: 'name', field_label: 'Name', field_type: 'text', field_options: null } }],
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 5, typeName: 'vendor', isActive: true,
+        createdAt: new Date(), updatedAt: new Date(),
+        userTypeFields: [{ fieldId: 1, isRequired: true, fieldOrder: 1, field: { fieldName: 'name', fieldLabel: 'Name', fieldType: 'text', fieldOptions: null } }],
         requests: []
       });
 
@@ -883,9 +883,9 @@ describe('User Types Integration Tests', () => {
       expect(readRes.body.data.user_type.type_name).toBe('vendor');
 
       // Step 3: Toggle status
-      mockPrisma.user_types.count.mockResolvedValue(3);
-      mockPrisma.user_types.update.mockResolvedValue({
-        id: 5, type_name: 'vendor', is_active: false, updated_at: new Date()
+      mockPrisma.userType.count.mockResolvedValue(3);
+      mockPrisma.userType.update.mockResolvedValue({
+        id: 5, typeName: 'vendor', isActive: false, updatedAt: new Date()
       });
 
       const statusRes = await request(app)
@@ -897,9 +897,9 @@ describe('User Types Integration Tests', () => {
       expect(statusRes.body.data.is_active).toBe(false);
 
       // Step 4: Delete
-      mockPrisma.user_types.count.mockResolvedValue(2);
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 5, type_name: 'vendor', is_active: false, requests: []
+      mockPrisma.userType.count.mockResolvedValue(2);
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 5, typeName: 'vendor', isActive: false, requests: []
       });
 
       const deleteRes = await request(app)
@@ -917,7 +917,7 @@ describe('User Types Integration Tests', () => {
   // ───────────────────────────────────────────────
   describe('Error Handling', () => {
     test('should return 500 when database throws on list', async () => {
-      mockPrisma.user_types.findMany.mockRejectedValue(new Error('DB connection lost'));
+      mockPrisma.userType.findMany.mockRejectedValue(new Error('DB connection lost'));
 
       const response = await request(app)
         .get('/api/v1/user-types')
@@ -929,7 +929,7 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return 500 when database throws on detail', async () => {
-      mockPrisma.user_types.findUnique.mockRejectedValue(new Error('DB error'));
+      mockPrisma.userType.findUnique.mockRejectedValue(new Error('DB error'));
 
       const response = await request(app)
         .get('/api/v1/user-types/1')
@@ -940,8 +940,8 @@ describe('User Types Integration Tests', () => {
     });
 
     test('should return 500 when transaction fails on create', async () => {
-      mockPrisma.user_types.findFirst.mockResolvedValue(null);
-      mockPrisma.fields_master.findMany.mockResolvedValue([{ id: 1 }]);
+      mockPrisma.userType.findFirst.mockResolvedValue(null);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([{ id: 1 }]);
       mockPrisma.$transaction.mockRejectedValue(new Error('Transaction failed'));
 
       const response = await request(app)

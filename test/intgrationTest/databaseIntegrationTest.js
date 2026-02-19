@@ -4,16 +4,16 @@ const jwt = require('jsonwebtoken');
 
 // Mock Prisma
 const mockPrisma = {
-  user_types: {
+  userType: {
     count: jest.fn()
   },
-  fields_master: {
+  fieldsMaster: {
     count: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     count: jest.fn()
   },
-  requests: {
+  request: {
     count: jest.fn(),
     groupBy: jest.fn()
   },
@@ -142,14 +142,14 @@ describe('Database Integration Tests', () => {
   // ───────────────────────────────────────────────
   describe('GET /api/v1/database/stats - Statistics', () => {
     test('should return comprehensive database statistics', async () => {
-      mockPrisma.user_types.count
+      mockPrisma.userType.count
         .mockResolvedValueOnce(3)   // total
         .mockResolvedValueOnce(2);  // active
 
-      mockPrisma.fields_master.count.mockResolvedValue(15);
-      mockPrisma.user_type_fields.count.mockResolvedValue(25);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(15);
+      mockPrisma.userTypeField.count.mockResolvedValue(25);
 
-      mockPrisma.requests.count
+      mockPrisma.request.count
         .mockResolvedValueOnce(50)  // total
         .mockResolvedValueOnce(10)  // pending
         .mockResolvedValueOnce(35)  // approved
@@ -164,14 +164,14 @@ describe('Database Integration Tests', () => {
           { tablename: 'requests', total_size: '8 MB', raw_size: 8388608n }
         ]);
 
-      mockPrisma.requests.groupBy.mockResolvedValue([
-        { user_type_id: 1, _count: { id: 30 } },
-        { user_type_id: 2, _count: { id: 20 } }
+      mockPrisma.request.groupBy.mockResolvedValue([
+        { userTypeId: 1, _count: { id: 30 } },
+        { userTypeId: 2, _count: { id: 20 } }
       ]);
 
-      mockPrisma.user_types.findMany = jest.fn().mockResolvedValue([
-        { id: 1, type_name: 'student' },
-        { id: 2, type_name: 'agent' }
+      mockPrisma.userType.findMany = jest.fn().mockResolvedValue([
+        { id: 1, typeName: 'student' },
+        { id: 2, typeName: 'agent' }
       ]);
 
       const response = await request(app)

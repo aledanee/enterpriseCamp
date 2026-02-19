@@ -48,14 +48,14 @@ const getActiveUserTypes = async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const userTypes = await prisma.user_types.findMany({
-      where: { is_active: true },
+    const userTypes = await prisma.userType.findMany({
+      where: { isActive: true },
       select: {
         id: true,
-        type_name: true,
-        is_active: true
+        typeName: true,
+        isActive: true
       },
-      orderBy: { type_name: 'asc' }
+      orderBy: { typeName: 'asc' }
     });
 
     if (userTypes.length === 0) {
@@ -89,7 +89,11 @@ const getActiveUserTypes = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        user_types: userTypes,
+        user_types: userTypes.map(ut => ({
+          id: ut.id,
+          type_name: ut.typeName,
+          is_active: ut.isActive
+        })),
         count: userTypes.length
       }
     });
@@ -134,12 +138,12 @@ const getUserTypeFields = async (req, res) => {
     }
 
     // Check if user type exists and is active
-    const userType = await prisma.user_types.findUnique({
+    const userType = await prisma.userType.findUnique({
       where: { id: userTypeId },
       select: {
         id: true,
-        type_name: true,
-        is_active: true
+        typeName: true,
+        isActive: true
       }
     });
 
@@ -151,7 +155,7 @@ const getUserTypeFields = async (req, res) => {
       });
     }
 
-    if (!userType.is_active) {
+    if (!userType.isActive) {
       return res.status(400).json({
         success: false,
         error: 'User type inactive',
@@ -160,22 +164,22 @@ const getUserTypeFields = async (req, res) => {
     }
 
     // Get fields for the user type
-    const userTypeFields = await prisma.user_type_fields.findMany({
-      where: { user_type_id: userTypeId },
+    const userTypeFields = await prisma.userTypeField.findMany({
+      where: { userTypeId: userTypeId },
       include: {
-        fields_master: true
+        field: true
       },
-      orderBy: { field_order: 'asc' }
+      orderBy: { fieldOrder: 'asc' }
     });
 
     const fields = userTypeFields.map(utf => ({
-      field_id: utf.fields_master.id,
-      field_name: utf.fields_master.field_name,
-      field_label: utf.fields_master.field_label,
-      field_type: utf.fields_master.field_type,
-      field_options: utf.fields_master.field_options,
-      is_required: utf.is_required,
-      field_order: utf.field_order
+      field_id: utf.field.id,
+      field_name: utf.field.fieldName,
+      field_label: utf.field.fieldLabel,
+      field_type: utf.field.fieldType,
+      field_options: utf.field.fieldOptions,
+      is_required: utf.isRequired,
+      field_order: utf.fieldOrder
     }));
 
     const responseTime = Date.now() - startTime;
@@ -183,7 +187,7 @@ const getUserTypeFields = async (req, res) => {
     logger.info('User type fields retrieved for public request', {
       action: 'get_user_type_fields',
       user_type_id: userTypeId,
-      type_name: userType.type_name,
+      type_name: userType.typeName,
       fields_count: fields.length,
       response_time_ms: responseTime,
       timestamp: new Date().toISOString()
@@ -194,7 +198,7 @@ const getUserTypeFields = async (req, res) => {
       data: {
         user_type: {
           id: userType.id,
-          type_name: userType.type_name
+          type_name: userType.typeName
         },
         fields: fields,
         count: fields.length
@@ -254,12 +258,12 @@ const createRequest = async (req, res) => {
     const { user_type_id, data } = value;
 
     // Verify user type exists and is active
-    const userType = await prisma.user_types.findUnique({
+    const userType = await prisma.userType.findUnique({
       where: { id: user_type_id },
       select: {
         id: true,
-        type_name: true,
-        is_active: true
+        typeName: true,
+        isActive: true
       }
     });
 
@@ -271,7 +275,7 @@ const createRequest = async (req, res) => {
       });
     }
 
-    if (!userType.is_active) {
+    if (!userType.isActive) {
       return res.status(400).json({
         success: false,
         error: 'User type inactive',
@@ -280,10 +284,10 @@ const createRequest = async (req, res) => {
     }
 
     // Get required fields for this user type
-    const userTypeFields = await prisma.user_type_fields.findMany({
-      where: { user_type_id: user_type_id },
+    const userTypeFields = await prisma.userTypeField.findMany({
+      where: { userTypeId: user_type_id },
       include: {
-        fields_master: true
+        field: true
       }
     });
 
@@ -291,13 +295,13 @@ const createRequest = async (req, res) => {
     const validationErrors = {};
     
     userTypeFields.forEach(utf => {
-      const fieldName = utf.fields_master.field_name;
-      const fieldLabel = utf.fields_master.field_label;
-      const fieldType = utf.fields_master.field_type;
+      const fieldName = utf.field.fieldName;
+      const fieldLabel = utf.field.fieldLabel;
+      const fieldType = utf.field.fieldType;
       const fieldValue = data[fieldName];
 
       // Check required fields
-      if (utf.is_required) {
+      if (utf.isRequired) {
         if (fieldValue === undefined || fieldValue === null || 
             (typeof fieldValue === 'string' && fieldValue.trim() === '')) {
           validationErrors[fieldName] = `${fieldLabel} is required`;
@@ -324,9 +328,9 @@ const createRequest = async (req, res) => {
             }
             break;
           case 'dropdown':
-            if (utf.fields_master.field_options) {
-              const options = Array.isArray(utf.fields_master.field_options) 
-                ? utf.fields_master.field_options 
+            if (utf.field.fieldOptions) {
+              const options = Array.isArray(utf.field.fieldOptions) 
+                ? utf.field.fieldOptions 
                 : [];
               if (options.length > 0 && !options.includes(fieldValue)) {
                 validationErrors[fieldName] = `Invalid option. Must be one of: ${options.join(', ')}`;
@@ -341,7 +345,7 @@ const createRequest = async (req, res) => {
       logger.warn('Request dynamic validation failed', {
         action: 'create_request_dynamic_validation_failed',
         user_type_id: user_type_id,
-        type_name: userType.type_name,
+        type_name: userType.typeName,
         validation_errors: validationErrors,
         ip_address: req.ip || req.connection.remoteAddress,
         timestamp: new Date().toISOString()
@@ -355,9 +359,9 @@ const createRequest = async (req, res) => {
     }
 
     // Create the request
-    const newRequest = await prisma.requests.create({
+    const newRequest = await prisma.request.create({
       data: {
-        user_type_id: user_type_id,
+        userTypeId: user_type_id,
         data: data,
         status: 'pending'
       }
@@ -369,7 +373,7 @@ const createRequest = async (req, res) => {
       action: 'create_request_success',
       request_id: newRequest.id,
       user_type_id: user_type_id,
-      type_name: userType.type_name,
+      type_name: userType.typeName,
       data_fields: Object.keys(data),
       ip_address: req.ip || req.connection.remoteAddress,
       response_time_ms: responseTime,
@@ -381,10 +385,10 @@ const createRequest = async (req, res) => {
       message: 'Request submitted successfully',
       data: {
         request_id: newRequest.id,
-        user_type_id: newRequest.user_type_id,
-        type_name: userType.type_name,
+        user_type_id: newRequest.userTypeId,
+        type_name: userType.typeName,
         status: newRequest.status,
-        created_at: newRequest.created_at
+        created_at: newRequest.createdAt
       }
     });
 
@@ -438,39 +442,39 @@ const getRequests = async (req, res) => {
       where.status = status;
     }
     if (user_type_id) {
-      where.user_type_id = parseInt(user_type_id);
+      where.userTypeId = parseInt(user_type_id);
     }
 
     // Build order by clause
     const orderBy = {};
     if (sort === 'created_at') {
-      orderBy.created_at = order;
+      orderBy.createdAt = order;
     } else if (sort === 'status') {
       orderBy.status = order;
     } else if (sort === 'updated_at') {
-      orderBy.updated_at = order;
+      orderBy.updatedAt = order;
     } else {
-      orderBy.created_at = order;
+      orderBy.createdAt = order;
     }
 
     // Get requests with user type info
     const [requests, totalCount] = await Promise.all([
-      prisma.requests.findMany({
+      prisma.request.findMany({
         where,
         orderBy,
         skip: offset,
         take: perPage,
         include: {
-          user_type: {
+          userType: {
             select: {
               id: true,
-              type_name: true,
-              is_active: true
+              typeName: true,
+              isActive: true
             }
           }
         }
       }),
-      prisma.requests.count({ where })
+      prisma.request.count({ where })
     ]);
 
     // Apply search filter on JSONB data (post-query for simplicity)
@@ -488,21 +492,21 @@ const getRequests = async (req, res) => {
     // Process requests
     const processedRequests = filteredRequests.map(request => ({
       id: request.id,
-      user_type_id: request.user_type_id,
-      type_name: request.user_type?.type_name || 'Deleted Type',
+      user_type_id: request.userTypeId,
+      type_name: request.userType?.typeName || 'Deleted Type',
       data: request.data,
       status: request.status,
-      admin_notes: request.admin_notes,
-      created_at: request.created_at,
-      updated_at: request.updated_at,
-      processed_at: request.processed_at
+      admin_notes: request.adminNotes,
+      created_at: request.createdAt,
+      updated_at: request.updatedAt,
+      processed_at: request.processedAt
     }));
 
     // Get status counts
     const [pendingCount, approvedCount, rejectedCount] = await Promise.all([
-      prisma.requests.count({ where: { status: 'pending' } }),
-      prisma.requests.count({ where: { status: 'approved' } }),
-      prisma.requests.count({ where: { status: 'rejected' } })
+      prisma.request.count({ where: { status: 'pending' } }),
+      prisma.request.count({ where: { status: 'approved' } }),
+      prisma.request.count({ where: { status: 'rejected' } })
     ]);
 
     const totalPages = Math.ceil(totalCount / perPage);
@@ -580,16 +584,16 @@ const getRequest = async (req, res) => {
       });
     }
 
-    const request = await prisma.requests.findUnique({
+    const request = await prisma.request.findUnique({
       where: { id: requestId },
       include: {
-        user_type: {
+        userType: {
           include: {
-            user_type_fields: {
+            userTypeFields: {
               include: {
-                fields_master: true
+                field: true
               },
-              orderBy: { field_order: 'asc' }
+              orderBy: { fieldOrder: 'asc' }
             }
           }
         }
@@ -605,13 +609,13 @@ const getRequest = async (req, res) => {
     }
 
     // Build detailed field data with labels
-    const fieldDetails = request.user_type?.user_type_fields?.map(utf => ({
-      field_name: utf.fields_master.field_name,
-      field_label: utf.fields_master.field_label,
-      field_type: utf.fields_master.field_type,
-      is_required: utf.is_required,
-      field_order: utf.field_order,
-      submitted_value: request.data?.[utf.fields_master.field_name] || null
+    const fieldDetails = request.userType?.userTypeFields?.map(utf => ({
+      field_name: utf.field.fieldName,
+      field_label: utf.field.fieldLabel,
+      field_type: utf.field.fieldType,
+      is_required: utf.isRequired,
+      field_order: utf.fieldOrder,
+      submitted_value: request.data?.[utf.field.fieldName] || null
     })) || [];
 
     const responseTime = Date.now() - startTime;
@@ -621,7 +625,7 @@ const getRequest = async (req, res) => {
       admin_id: req.admin.id,
       request_id: requestId,
       request_status: request.status,
-      user_type_id: request.user_type_id,
+      user_type_id: request.userTypeId,
       response_time_ms: responseTime,
       timestamp: new Date().toISOString()
     });
@@ -631,14 +635,14 @@ const getRequest = async (req, res) => {
       data: {
         request: {
           id: request.id,
-          user_type_id: request.user_type_id,
-          type_name: request.user_type?.type_name || 'Deleted Type',
+          user_type_id: request.userTypeId,
+          type_name: request.userType?.typeName || 'Deleted Type',
           data: request.data,
           status: request.status,
-          admin_notes: request.admin_notes,
-          created_at: request.created_at,
-          updated_at: request.updated_at,
-          processed_at: request.processed_at
+          admin_notes: request.adminNotes,
+          created_at: request.createdAt,
+          updated_at: request.updatedAt,
+          processed_at: request.processedAt
         },
         field_details: fieldDetails
       }
@@ -710,13 +714,13 @@ const updateRequestStatus = async (req, res) => {
     const { status, admin_notes } = value;
 
     // Check if request exists
-    const existingRequest = await prisma.requests.findUnique({
+    const existingRequest = await prisma.request.findUnique({
       where: { id: requestId },
       include: {
-        user_type: {
+        userType: {
           select: {
             id: true,
-            type_name: true
+            typeName: true
           }
         }
       }
@@ -747,19 +751,19 @@ const updateRequestStatus = async (req, res) => {
         message: `This request has already been ${existingRequest.status}`,
         data: {
           current_status: existingRequest.status,
-          processed_at: existingRequest.processed_at
+          processed_at: existingRequest.processedAt
         }
       });
     }
 
     // Update request status
-    const updatedRequest = await prisma.requests.update({
+    const updatedRequest = await prisma.request.update({
       where: { id: requestId },
       data: {
         status: status,
-        admin_notes: admin_notes || null,
-        processed_at: new Date(),
-        updated_at: new Date()
+        adminNotes: admin_notes || null,
+        processedAt: new Date(),
+        updatedAt: new Date()
       }
     });
 
@@ -772,8 +776,8 @@ const updateRequestStatus = async (req, res) => {
       old_status: 'pending',
       new_status: status,
       admin_notes: admin_notes || null,
-      user_type_id: existingRequest.user_type_id,
-      type_name: existingRequest.user_type?.type_name,
+      user_type_id: existingRequest.userTypeId,
+      type_name: existingRequest.userType?.typeName,
       response_time_ms: responseTime,
       timestamp: new Date().toISOString()
     });
@@ -785,9 +789,9 @@ const updateRequestStatus = async (req, res) => {
         request_id: updatedRequest.id,
         old_status: 'pending',
         new_status: updatedRequest.status,
-        admin_notes: updatedRequest.admin_notes,
-        processed_at: updatedRequest.processed_at,
-        updated_at: updatedRequest.updated_at
+        admin_notes: updatedRequest.adminNotes,
+        processed_at: updatedRequest.processedAt,
+        updated_at: updatedRequest.updatedAt
       }
     });
 

@@ -1,12 +1,12 @@
 // Mock Prisma methods
 const mockPrisma = {
-  fields_master: {
+  fieldsMaster: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     count: jest.fn(),
     groupBy: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     findMany: jest.fn()
   }
 };
@@ -28,8 +28,8 @@ describe('Fields Master Controllers - Happy Path Scenarios', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    Object.values(mockPrisma.fields_master).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.fieldsMaster).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(mock => mock.mockReset());
 
     mockReq = {
       body: {},
@@ -52,31 +52,31 @@ describe('Fields Master Controllers - Happy Path Scenarios', () => {
       const mockFields = [
         {
           id: 1,
-          field_name: 'full_name',
-          field_label: 'الاسم الكامل',
-          field_type: 'text',
-          field_options: null,
-          created_at: new Date('2026-01-15'),
-          updated_at: new Date('2026-01-15'),
-          user_type_fields: [
+          fieldName: 'full_name',
+          fieldLabel: 'الاسم الكامل',
+          fieldType: 'text',
+          fieldOptions: null,
+          createdAt: new Date('2026-01-15'),
+          updatedAt: new Date('2026-01-15'),
+          userTypeFields: [
             {
-              is_required: true,
-              field_order: 1,
-              user_type: { id: 1, type_name: 'student', is_active: true }
+              isRequired: true,
+              fieldOrder: 1,
+              userType: { id: 1, typeName: 'student', isActive: true }
             },
             {
-              is_required: false,
-              field_order: 2,
-              user_type: { id: 2, type_name: 'agent', is_active: false }
+              isRequired: false,
+              fieldOrder: 2,
+              userType: { id: 2, typeName: 'agent', isActive: false }
             }
           ]
         }
       ];
 
-      mockPrisma.fields_master.findMany.mockResolvedValue(mockFields);
-      mockPrisma.fields_master.count.mockResolvedValue(1);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([
-        { field_type: 'text', _count: { id: 1 } }
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue(mockFields);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(1);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([
+        { fieldType: 'text', _count: { id: 1 } }
       ]);
 
       await getFieldsMaster(mockReq, mockRes);
@@ -108,18 +108,18 @@ describe('Fields Master Controllers - Happy Path Scenarios', () => {
 
     test('should apply search filter on field name and label', async () => {
       mockReq.query = { search: 'email' };
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
-      mockPrisma.fields_master.count.mockResolvedValue(0);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(0);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([]);
 
       await getFieldsMaster(mockReq, mockRes);
 
-      expect(mockPrisma.fields_master.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.fieldsMaster.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             OR: expect.arrayContaining([
-              { field_name: { contains: 'email', mode: 'insensitive' } },
-              { field_label: { contains: 'email', mode: 'insensitive' } }
+              { fieldName: { contains: 'email', mode: 'insensitive' } },
+              { fieldLabel: { contains: 'email', mode: 'insensitive' } }
             ])
           })
         })
@@ -129,16 +129,16 @@ describe('Fields Master Controllers - Happy Path Scenarios', () => {
 
     test('should apply field_type filter', async () => {
       mockReq.query = { field_type: 'dropdown' };
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
-      mockPrisma.fields_master.count.mockResolvedValue(0);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(0);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([]);
 
       await getFieldsMaster(mockReq, mockRes);
 
-      expect(mockPrisma.fields_master.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.fieldsMaster.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            field_type: 'dropdown'
+            fieldType: 'dropdown'
           })
         })
       );
@@ -146,23 +146,23 @@ describe('Fields Master Controllers - Happy Path Scenarios', () => {
 
     test('should sort by name descending', async () => {
       mockReq.query = { sort: 'name', order: 'desc' };
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
-      mockPrisma.fields_master.count.mockResolvedValue(0);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(0);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([]);
 
       await getFieldsMaster(mockReq, mockRes);
 
-      expect(mockPrisma.fields_master.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.fieldsMaster.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          orderBy: { field_name: 'desc' }
+          orderBy: { fieldName: 'desc' }
         })
       );
     });
 
     test('should return empty list when no fields exist', async () => {
-      mockPrisma.fields_master.findMany.mockResolvedValue([]);
-      mockPrisma.fields_master.count.mockResolvedValue(0);
-      mockPrisma.fields_master.groupBy.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.findMany.mockResolvedValue([]);
+      mockPrisma.fieldsMaster.count.mockResolvedValue(0);
+      mockPrisma.fieldsMaster.groupBy.mockResolvedValue([]);
 
       await getFieldsMaster(mockReq, mockRes);
 
@@ -185,24 +185,24 @@ describe('Fields Master Controllers - Happy Path Scenarios', () => {
     test('should return field detail with usage information', async () => {
       const mockField = {
         id: 1,
-        field_name: 'email',
-        field_label: 'البريد الإلكتروني',
-        field_type: 'email',
-        field_options: null,
-        created_at: new Date('2026-01-15'),
-        updated_at: new Date('2026-01-15'),
-        user_type_fields: [
+        fieldName: 'email',
+        fieldLabel: 'البريد الإلكتروني',
+        fieldType: 'email',
+        fieldOptions: null,
+        createdAt: new Date('2026-01-15'),
+        updatedAt: new Date('2026-01-15'),
+        userTypeFields: [
           {
             id: 10,
-            is_required: true,
-            field_order: 3,
-            user_type: { id: 1, type_name: 'student', is_active: true }
+            isRequired: true,
+            fieldOrder: 3,
+            userType: { id: 1, typeName: 'student', isActive: true }
           }
         ]
       };
 
       mockReq.params = { id: '1' };
-      mockPrisma.fields_master.findUnique.mockResolvedValue(mockField);
+      mockPrisma.fieldsMaster.findUnique.mockResolvedValue(mockField);
 
       await getFieldDetail(mockReq, mockRes);
 
@@ -228,8 +228,8 @@ describe('Fields Master Controllers - Error Scenarios', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    Object.values(mockPrisma.fields_master).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.fieldsMaster).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(mock => mock.mockReset());
 
     mockReq = {
       body: {},
@@ -249,8 +249,8 @@ describe('Fields Master Controllers - Error Scenarios', () => {
 
   describe('getFieldsMaster - Error Path', () => {
     test('should return 500 when database query fails', async () => {
-      mockPrisma.fields_master.findMany.mockRejectedValue(new Error('DB connection lost'));
-      mockPrisma.fields_master.count.mockRejectedValue(new Error('DB connection lost'));
+      mockPrisma.fieldsMaster.findMany.mockRejectedValue(new Error('DB connection lost'));
+      mockPrisma.fieldsMaster.count.mockRejectedValue(new Error('DB connection lost'));
 
       await getFieldsMaster(mockReq, mockRes);
 
@@ -281,7 +281,7 @@ describe('Fields Master Controllers - Error Scenarios', () => {
 
     test('should return 404 when field does not exist', async () => {
       mockReq.params = { id: '999' };
-      mockPrisma.fields_master.findUnique.mockResolvedValue(null);
+      mockPrisma.fieldsMaster.findUnique.mockResolvedValue(null);
 
       await getFieldDetail(mockReq, mockRes);
 
@@ -296,7 +296,7 @@ describe('Fields Master Controllers - Error Scenarios', () => {
 
     test('should return 500 when database fails for field detail', async () => {
       mockReq.params = { id: '1' };
-      mockPrisma.fields_master.findUnique.mockRejectedValue(new Error('Connection timeout'));
+      mockPrisma.fieldsMaster.findUnique.mockRejectedValue(new Error('Connection timeout'));
 
       await getFieldDetail(mockReq, mockRes);
 

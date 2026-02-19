@@ -1,16 +1,16 @@
 // Mock Prisma methods
 const mockPrisma = {
-  user_types: {
+  userType: {
     findMany: jest.fn(),
     findUnique: jest.fn()
   },
-  user_type_fields: {
+  userTypeField: {
     findMany: jest.fn()
   },
-  fields_master: {
+  fieldsMaster: {
     findUnique: jest.fn()
   },
-  requests: {
+  request: {
     create: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -43,9 +43,9 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    Object.values(mockPrisma.user_types).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.requests).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userType).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.request).forEach(mock => mock.mockReset());
 
     mockReq = {
       body: {},
@@ -69,11 +69,11 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
   describe('getActiveUserTypes - Happy Path', () => {
     test('should return active user types list', async () => {
       const mockUserTypes = [
-        { id: 1, type_name: 'student', is_active: true },
-        { id: 2, type_name: 'agent', is_active: true }
+        { id: 1, typeName: 'student', isActive: true },
+        { id: 2, typeName: 'agent', isActive: true }
       ];
 
-      mockPrisma.user_types.findMany.mockResolvedValue(mockUserTypes);
+      mockPrisma.userType.findMany.mockResolvedValue(mockUserTypes);
 
       await getActiveUserTypes(mockReq, mockRes);
 
@@ -82,7 +82,10 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
         expect.objectContaining({
           success: true,
           data: {
-            user_types: mockUserTypes,
+            user_types: [
+              { id: 1, type_name: 'student', is_active: true },
+              { id: 2, type_name: 'agent', is_active: true }
+            ],
             count: 2
           }
         })
@@ -90,7 +93,7 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
     });
 
     test('should return empty list when no active user types', async () => {
-      mockPrisma.user_types.findMany.mockResolvedValue([]);
+      mockPrisma.userType.findMany.mockResolvedValue([]);
 
       await getActiveUserTypes(mockReq, mockRes);
 
@@ -112,31 +115,31 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
     test('should return fields for an active user type', async () => {
       mockReq.params = { id: '1' };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          field_order: 1,
-          is_required: true,
-          fields_master: {
+          fieldOrder: 1,
+          isRequired: true,
+          field: {
             id: 1,
-            field_name: 'full_name',
-            field_label: 'الاسم الكامل',
-            field_type: 'text',
-            field_options: null
+            fieldName: 'full_name',
+            fieldLabel: 'الاسم الكامل',
+            fieldType: 'text',
+            fieldOptions: null
           }
         },
         {
-          field_order: 2,
-          is_required: true,
-          fields_master: {
+          fieldOrder: 2,
+          isRequired: true,
+          field: {
             id: 2,
-            field_name: 'email',
-            field_label: 'البريد',
-            field_type: 'email',
-            field_options: null
+            fieldName: 'email',
+            fieldLabel: 'البريد',
+            fieldType: 'email',
+            fieldOptions: null
           }
         }
       ]);
@@ -176,37 +179,37 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
         }
       };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: true,
-          fields_master: {
-            field_name: 'full_name',
-            field_label: 'Full Name',
-            field_type: 'text',
-            field_options: null
+          isRequired: true,
+          field: {
+            fieldName: 'full_name',
+            fieldLabel: 'Full Name',
+            fieldType: 'text',
+            fieldOptions: null
           }
         },
         {
-          is_required: true,
-          fields_master: {
-            field_name: 'email',
-            field_label: 'Email',
-            field_type: 'email',
-            field_options: null
+          isRequired: true,
+          field: {
+            fieldName: 'email',
+            fieldLabel: 'Email',
+            fieldType: 'email',
+            fieldOptions: null
           }
         }
       ]);
 
-      mockPrisma.requests.create.mockResolvedValue({
+      mockPrisma.request.create.mockResolvedValue({
         id: 1,
-        user_type_id: 1,
+        userTypeId: 1,
         data: { full_name: 'Test User', email: 'test@example.com' },
         status: 'pending',
-        created_at: new Date('2026-02-14')
+        createdAt: new Date('2026-02-14')
       });
 
       await createRequest(mockReq, mockRes);
@@ -234,19 +237,19 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
       const mockRequests = [
         {
           id: 1,
-          user_type_id: 1,
+          userTypeId: 1,
           data: { full_name: 'Ahmed' },
           status: 'pending',
-          admin_notes: null,
-          created_at: new Date('2026-02-14'),
-          updated_at: new Date('2026-02-14'),
-          processed_at: null,
-          user_type: { id: 1, type_name: 'student', is_active: true }
+          adminNotes: null,
+          createdAt: new Date('2026-02-14'),
+          updatedAt: new Date('2026-02-14'),
+          processedAt: null,
+          userType: { id: 1, typeName: 'student', isActive: true }
         }
       ];
 
-      mockPrisma.requests.findMany.mockResolvedValue(mockRequests);
-      mockPrisma.requests.count
+      mockPrisma.request.findMany.mockResolvedValue(mockRequests);
+      mockPrisma.request.count
         .mockResolvedValueOnce(1)   // totalCount
         .mockResolvedValueOnce(1)   // pending
         .mockResolvedValueOnce(0)   // approved
@@ -279,8 +282,8 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
     test('should filter by status', async () => {
       mockReq.query = { status: 'approved' };
 
-      mockPrisma.requests.findMany.mockResolvedValue([]);
-      mockPrisma.requests.count
+      mockPrisma.request.findMany.mockResolvedValue([]);
+      mockPrisma.request.count
         .mockResolvedValueOnce(0)   // totalCount
         .mockResolvedValueOnce(0)   // pending
         .mockResolvedValueOnce(0)   // approved
@@ -288,7 +291,7 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
 
       await getRequests(mockReq, mockRes);
 
-      expect(mockPrisma.requests.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.request.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ status: 'approved' })
         })
@@ -303,25 +306,25 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
     test('should return single request with field details', async () => {
       mockReq.params = { id: '1' };
 
-      mockPrisma.requests.findUnique.mockResolvedValue({
+      mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
-        user_type_id: 1,
+        userTypeId: 1,
         data: { full_name: 'Ahmed', email: 'a@test.com' },
         status: 'pending',
-        admin_notes: null,
-        created_at: new Date('2026-02-14'),
-        updated_at: new Date('2026-02-14'),
-        processed_at: null,
-        user_type: {
-          type_name: 'student',
-          user_type_fields: [
+        adminNotes: null,
+        createdAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14'),
+        processedAt: null,
+        userType: {
+          typeName: 'student',
+          userTypeFields: [
             {
-              is_required: true,
-              field_order: 1,
-              fields_master: {
-                field_name: 'full_name',
-                field_label: 'الاسم',
-                field_type: 'text'
+              isRequired: true,
+              fieldOrder: 1,
+              field: {
+                fieldName: 'full_name',
+                fieldLabel: 'الاسم',
+                fieldType: 'text'
               }
             }
           ]
@@ -359,19 +362,19 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
       mockReq.params = { id: '1' };
       mockReq.body = { status: 'approved', admin_notes: 'Looks good' };
 
-      mockPrisma.requests.findUnique.mockResolvedValue({
+      mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
         status: 'pending',
-        user_type_id: 1,
-        user_type: { id: 1, type_name: 'student' }
+        userTypeId: 1,
+        userType: { id: 1, typeName: 'student' }
       });
 
-      mockPrisma.requests.update.mockResolvedValue({
+      mockPrisma.request.update.mockResolvedValue({
         id: 1,
         status: 'approved',
-        admin_notes: 'Looks good',
-        processed_at: new Date('2026-02-14'),
-        updated_at: new Date('2026-02-14')
+        adminNotes: 'Looks good',
+        processedAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14')
       });
 
       await updateRequestStatus(mockReq, mockRes);
@@ -393,19 +396,19 @@ describe('Requests Controllers - Happy Path Scenarios', () => {
       mockReq.params = { id: '2' };
       mockReq.body = { status: 'rejected', admin_notes: 'Incomplete documents' };
 
-      mockPrisma.requests.findUnique.mockResolvedValue({
+      mockPrisma.request.findUnique.mockResolvedValue({
         id: 2,
         status: 'pending',
-        user_type_id: 1,
-        user_type: { id: 1, type_name: 'student' }
+        userTypeId: 1,
+        userType: { id: 1, typeName: 'student' }
       });
 
-      mockPrisma.requests.update.mockResolvedValue({
+      mockPrisma.request.update.mockResolvedValue({
         id: 2,
         status: 'rejected',
-        admin_notes: 'Incomplete documents',
-        processed_at: new Date('2026-02-14'),
-        updated_at: new Date('2026-02-14')
+        adminNotes: 'Incomplete documents',
+        processedAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14')
       });
 
       await updateRequestStatus(mockReq, mockRes);
@@ -428,9 +431,9 @@ describe('Requests Controllers - Error Scenarios', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    Object.values(mockPrisma.user_types).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.user_type_fields).forEach(mock => mock.mockReset());
-    Object.values(mockPrisma.requests).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userType).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.userTypeField).forEach(mock => mock.mockReset());
+    Object.values(mockPrisma.request).forEach(mock => mock.mockReset());
 
     mockReq = {
       body: {},
@@ -450,7 +453,7 @@ describe('Requests Controllers - Error Scenarios', () => {
 
   describe('getActiveUserTypes - Error Path', () => {
     test('should return 500 when database fails', async () => {
-      mockPrisma.user_types.findMany.mockRejectedValue(new Error('DB down'));
+      mockPrisma.userType.findMany.mockRejectedValue(new Error('DB down'));
 
       await getActiveUserTypes(mockReq, mockRes);
 
@@ -476,7 +479,7 @@ describe('Requests Controllers - Error Scenarios', () => {
 
     test('should return 404 when user type not found', async () => {
       mockReq.params = { id: '999' };
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       await getUserTypeFields(mockReq, mockRes);
 
@@ -488,8 +491,8 @@ describe('Requests Controllers - Error Scenarios', () => {
 
     test('should return 400 when user type is inactive', async () => {
       mockReq.params = { id: '1' };
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'test', is_active: false
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'test', isActive: false
       });
 
       await getUserTypeFields(mockReq, mockRes);
@@ -523,7 +526,7 @@ describe('Requests Controllers - Error Scenarios', () => {
 
     test('should return 404 when user type not found', async () => {
       mockReq.body = { user_type_id: 999, data: { name: 'Test' } };
-      mockPrisma.user_types.findUnique.mockResolvedValue(null);
+      mockPrisma.userType.findUnique.mockResolvedValue(null);
 
       await createRequest(mockReq, mockRes);
 
@@ -532,8 +535,8 @@ describe('Requests Controllers - Error Scenarios', () => {
 
     test('should return 400 when user type is inactive', async () => {
       mockReq.body = { user_type_id: 1, data: { name: 'Test' } };
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'test', is_active: false
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'test', isActive: false
       });
 
       await createRequest(mockReq, mockRes);
@@ -547,18 +550,18 @@ describe('Requests Controllers - Error Scenarios', () => {
     test('should return 400 when required field is missing', async () => {
       mockReq.body = { user_type_id: 1, data: {} };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: true,
-          fields_master: {
-            field_name: 'full_name',
-            field_label: 'Full Name',
-            field_type: 'text',
-            field_options: null
+          isRequired: true,
+          field: {
+            fieldName: 'full_name',
+            fieldLabel: 'Full Name',
+            fieldType: 'text',
+            fieldOptions: null
           }
         }
       ]);
@@ -580,18 +583,18 @@ describe('Requests Controllers - Error Scenarios', () => {
     test('should return 400 when email format is invalid', async () => {
       mockReq.body = { user_type_id: 1, data: { email: 'not-an-email' } };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: false,
-          fields_master: {
-            field_name: 'email',
-            field_label: 'Email',
-            field_type: 'email',
-            field_options: null
+          isRequired: false,
+          field: {
+            fieldName: 'email',
+            fieldLabel: 'Email',
+            fieldType: 'email',
+            fieldOptions: null
           }
         }
       ]);
@@ -611,18 +614,18 @@ describe('Requests Controllers - Error Scenarios', () => {
     test('should return 400 when dropdown value is invalid', async () => {
       mockReq.body = { user_type_id: 1, data: { gender: 'invalid' } };
 
-      mockPrisma.user_types.findUnique.mockResolvedValue({
-        id: 1, type_name: 'student', is_active: true
+      mockPrisma.userType.findUnique.mockResolvedValue({
+        id: 1, typeName: 'student', isActive: true
       });
 
-      mockPrisma.user_type_fields.findMany.mockResolvedValue([
+      mockPrisma.userTypeField.findMany.mockResolvedValue([
         {
-          is_required: false,
-          fields_master: {
-            field_name: 'gender',
-            field_label: 'Gender',
-            field_type: 'dropdown',
-            field_options: ['male', 'female']
+          isRequired: false,
+          field: {
+            fieldName: 'gender',
+            fieldLabel: 'Gender',
+            fieldType: 'dropdown',
+            fieldOptions: ['male', 'female']
           }
         }
       ]);
@@ -654,7 +657,7 @@ describe('Requests Controllers - Error Scenarios', () => {
 
     test('should return 404 when request not found', async () => {
       mockReq.params = { id: '999' };
-      mockPrisma.requests.findUnique.mockResolvedValue(null);
+      mockPrisma.request.findUnique.mockResolvedValue(null);
 
       await getRequest(mockReq, mockRes);
 
@@ -687,7 +690,7 @@ describe('Requests Controllers - Error Scenarios', () => {
     test('should return 404 when request not found', async () => {
       mockReq.params = { id: '999' };
       mockReq.body = { status: 'approved' };
-      mockPrisma.requests.findUnique.mockResolvedValue(null);
+      mockPrisma.request.findUnique.mockResolvedValue(null);
 
       await updateRequestStatus(mockReq, mockRes);
 
@@ -698,11 +701,11 @@ describe('Requests Controllers - Error Scenarios', () => {
       mockReq.params = { id: '1' };
       mockReq.body = { status: 'approved' };
 
-      mockPrisma.requests.findUnique.mockResolvedValue({
+      mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
         status: 'approved',
-        processed_at: new Date('2026-02-14'),
-        user_type: { id: 1, type_name: 'student' }
+        processedAt: new Date('2026-02-14'),
+        userType: { id: 1, typeName: 'student' }
       });
 
       await updateRequestStatus(mockReq, mockRes);
@@ -720,7 +723,7 @@ describe('Requests Controllers - Error Scenarios', () => {
       mockReq.params = { id: '1' };
       mockReq.body = { status: 'approved' };
 
-      mockPrisma.requests.findUnique.mockRejectedValue(new Error('DB error'));
+      mockPrisma.request.findUnique.mockRejectedValue(new Error('DB error'));
 
       await updateRequestStatus(mockReq, mockRes);
 
