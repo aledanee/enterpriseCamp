@@ -371,10 +371,10 @@ describe('User Types Controllers - Happy Path Scenarios', () => {
 
       const mockCreatedUserType = {
         id: 3,
-        type_name: 'contractor',
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date()
+        typeName: 'contractor',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const mockValidFields = [
