@@ -35,7 +35,10 @@ export default function RequestDetailPage() {
         const d = res.data.data;
         setRequest(d.request || d);
         const st = d.request?.status || d.status || 'pending';
-        setNewStatus(st === 'pending' ? 'approved' : st);
+        // Default to opposite of current so the dropdown always offers a meaningful change
+        if (st === 'approved') setNewStatus('rejected');
+        else if (st === 'rejected') setNewStatus('approved');
+        else setNewStatus('approved'); // pending → default approve
       } catch {
         message.error('فشل تحميل تفاصيل الطلب');
       } finally {

@@ -735,27 +735,7 @@ const updateRequestStatus = async (req, res) => {
       });
     }
 
-    // Check if request is still pending
-    if (existingRequest.status !== 'pending') {
-      logger.warn('Attempt to process already processed request', {
-        action: 'update_request_status_conflict',
-        admin_id: req.admin.id,
-        request_id: requestId,
-        current_status: existingRequest.status,
-        attempted_status: status,
-        timestamp: new Date().toISOString()
-      });
-
-      return res.status(409).json({
-        success: false,
-        error: 'Request already processed',
-        message: `This request has already been ${existingRequest.status}`,
-        data: {
-          current_status: existingRequest.status,
-          processed_at: existingRequest.processedAt
-        }
-      });
-    }
+    // Allow re-processing: admins can update status from any state
 
     // Update request status
     const updatedRequest = await prisma.request.update({
@@ -774,7 +754,7 @@ const updateRequestStatus = async (req, res) => {
       action: 'update_request_status_success',
       admin_id: req.admin.id,
       request_id: requestId,
-      old_status: 'pending',
+      old_status: existingRequest.status,
       new_status: status,
       admin_notes: admin_notes || null,
       user_type_id: existingRequest.userTypeId,
@@ -797,7 +777,7 @@ const updateRequestStatus = async (req, res) => {
       message: 'Request status updated successfully',
       data: {
         request_id: updatedRequest.id,
-        old_status: 'pending',
+        old_status: existingRequest.status,
         new_status: updatedRequest.status,
         admin_notes: updatedRequest.adminNotes,
         processed_at: updatedRequest.processedAt,

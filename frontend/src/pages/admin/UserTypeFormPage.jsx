@@ -54,7 +54,9 @@ export default function UserTypeFormPage() {
       if (prev.some(f => f.field_id === fieldId)) {
         return prev.filter(f => f.field_id !== fieldId);
       }
-      return [...prev, { field_id: fieldId, is_required: false, field_order: prev.length + 1 }];
+      // Always use max existing order + 1 to prevent duplicates when fields are removed then added
+      const nextOrder = prev.length > 0 ? Math.max(...prev.map(f => f.field_order || 0)) + 1 : 1;
+      return [...prev, { field_id: fieldId, is_required: false, field_order: nextOrder }];
     });
   };
 
@@ -112,7 +114,8 @@ export default function UserTypeFormPage() {
       render: (_, r) => (
         <InputNumber
           min={1} value={r.field_order} size="small"
-          onChange={(v) => updateField(r.field_id, 'field_order', v)}
+          precision={0}
+          onChange={(v) => updateField(r.field_id, 'field_order', v ?? r.field_order)}
           style={{ width: 70 }}
         />
       ),
