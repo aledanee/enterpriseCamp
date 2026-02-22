@@ -27,6 +27,9 @@ jest.mock('../../src/shared/services/logger', () => ({
   info: jest.fn(),
   debug: jest.fn()
 }));
+jest.mock('../../src/shared/services/notificationService', () => ({
+  notifyRequestStatusChange: jest.fn().mockResolvedValue({ success: true })
+}));
 
 const {
   getActiveUserTypes,
@@ -697,9 +700,9 @@ describe('Requests Controllers - Error Scenarios', () => {
       expect(mockRes.status).toHaveBeenCalledWith(404);
     });
 
-    test('should return 409 when request already processed', async () => {
+    test('should allow re-processing an already processed request (approved → rejected)', async () => {
       mockReq.params = { id: '1' };
-      mockReq.body = { status: 'approved' };
+      mockReq.body = { status: 'rejected' };
 
       mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
@@ -708,13 +711,24 @@ describe('Requests Controllers - Error Scenarios', () => {
         userType: { id: 1, typeName: 'student' }
       });
 
+      mockPrisma.request.update.mockResolvedValue({
+        id: 1,
+        status: 'rejected',
+        adminNotes: null,
+        processedAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14')
+      });
+
       await updateRequestStatus(mockReq, mockRes);
 
-      expect(mockRes.status).toHaveBeenCalledWith(409);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          success: false,
-          error: 'Request already processed'
+          success: true,
+          data: expect.objectContaining({
+            old_status: 'approved',
+            new_status: 'rejected'
+          })
         })
       );
     });

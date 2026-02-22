@@ -30,6 +30,9 @@ jest.mock('../../src/shared/services/logger', () => ({
   info: jest.fn(),
   debug: jest.fn()
 }));
+jest.mock('../../src/shared/services/notificationService', () => ({
+  notifyRequestStatusChange: jest.fn().mockResolvedValue({ success: true })
+}));
 
 const requestsRouter = require('../../src/features/requests/router');
 
@@ -527,7 +530,7 @@ describe('Requests Integration Tests', () => {
       expect(response.body.data.new_status).toBe('rejected');
     });
 
-    test('should return 409 for already processed request', async () => {
+    test('should allow re-processing an already processed request (approved → rejected)', async () => {
       mockPrisma.request.findUnique.mockResolvedValue({
         id: 1,
         status: 'approved',
@@ -535,14 +538,25 @@ describe('Requests Integration Tests', () => {
         userType: { id: 1, typeName: 'student' }
       });
 
+      mockPrisma.request.update.mockResolvedValue({
+        id: 1,
+        status: 'rejected',
+        adminNotes: 'تم التصحيح',
+        processedAt: new Date('2026-02-14'),
+        updatedAt: new Date('2026-02-14')
+      });
+
       const response = await request(app)
         .put('/api/v1/requests/admin/1/status')
         .set('Authorization', `Bearer ${validToken}`)
-        .send({ status: 'rejected' })
-        .expect(409);
+        .send({ status: 'rejected', admin_notes: 'تم التصحيح' })
+        .expect(200);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Request already processed');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toMatchObject({
+        old_status: 'approved',
+        new_status: 'rejected'
+      });
     });
 
     test('should reject invalid status value', async () => {
