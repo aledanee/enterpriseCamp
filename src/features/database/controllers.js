@@ -62,12 +62,22 @@ const createBackup = async (req, res) => {
     const filename = `backup_${timestamp}.sql`;
     const filePath = path.join(BACKUP_DIR, filename);
 
-    // Set password environment variable for pg_dump
+    // Use docker exec to run pg_dump inside the PostgreSQL container
+    // First try local pg_dump, fallback to docker exec
     const env = { ...process.env, PGPASSWORD: dbConfig.password };
 
-    const command = `pg_dump -h ${dbConfig.host} -p ${dbConfig.port} -U ${dbConfig.username} -d ${dbConfig.database} -F p -f "${filePath}"`;
-
-    await execAsync(command, { env, timeout: 120000 });
+    let command;
+    try {
+      await execAsync('which pg_dump');
+      command = `pg_dump -h ${dbConfig.host} -p ${dbConfig.port} -U ${dbConfig.username} -d ${dbConfig.database} -F p -f "${filePath}"`;
+      await execAsync(command, { env, timeout: 120000 });
+    } catch {
+      // pg_dump not available locally, use docker exec
+      const containerName = 'lesone_postgres';
+      const dumpCommand = `docker exec -e PGPASSWORD=${dbConfig.password} ${containerName} pg_dump -U ${dbConfig.username} -d ${dbConfig.database} -F p`;
+      const { stdout } = await execAsync(dumpCommand, { timeout: 120000, maxBuffer: 50 * 1024 * 1024 });
+      await fsPromises.writeFile(filePath, stdout);
+    }
 
     // Get file stats
     const stats = await fsPromises.stat(filePath);
@@ -162,9 +172,17 @@ const restoreBackup = async (req, res) => {
     const dbConfig = parseDatabaseUrl();
     const env = { ...process.env, PGPASSWORD: dbConfig.password };
 
-    const command = `psql -h ${dbConfig.host} -p ${dbConfig.port} -U ${dbConfig.username} -d ${dbConfig.database} -f "${filePath}"`;
-
-    await execAsync(command, { env, timeout: 300000 });
+    let command;
+    try {
+      await execAsync('which psql');
+      command = `psql -h ${dbConfig.host} -p ${dbConfig.port} -U ${dbConfig.username} -d ${dbConfig.database} -f "${filePath}"`;
+      await execAsync(command, { env, timeout: 300000 });
+    } catch {
+      // psql not available locally, use docker exec with cat piping
+      const containerName = 'lesone_postgres';
+      command = `cat "${filePath}" | docker exec -i -e PGPASSWORD=${dbConfig.password} ${containerName} psql -U ${dbConfig.username} -d ${dbConfig.database}`;
+      await execAsync(command, { timeout: 300000, maxBuffer: 50 * 1024 * 1024 });
+    }
 
     const responseTime = Date.now() - startTime;
 

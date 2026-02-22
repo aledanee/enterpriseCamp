@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: #e0e0ff;
+  background-color: #0a0a1a;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #0a0a1a;
+  direction: rtl;
+}
+
+a { color: #6C63FF; text-decoration: none; }
+a:hover { color: #8b7fff; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0a0a1a; }
+::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a6a; }
+
+/* Ant Design overrides */
+.ant-layout { background: #0a0a1a !important; }
+.ant-card { border: 1px solid #2a2a4a !important; }
+.ant-table-wrapper .ant-table { background: #12122a; }
+.ant-table-wrapper .ant-table-thead > tr > th { background: #1a1a36 !important; color: #8888bb !important; border-bottom: 1px solid #2a2a4a !important; }
+.ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #1a1a36 !important; }
+.ant-table-wrapper .ant-table-tbody > tr:hover > td { background: #1a1a36 !important; }
+.ant-statistic-title { color: #8888bb !important; }
+
+/* Glow utility */
+.glow-primary { box-shadow: 0 0 20px rgba(108, 99, 255, 0.3); }
+.glow-success { box-shadow: 0 0 20px rgba(0, 230, 118, 0.2); }
+.glow-error   { box-shadow: 0 0 20px rgba(255, 82, 82, 0.2); }
+
+/* Star / particle bg for public pages */
+.star-bg {
+  position: fixed; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(0,230,118,0.05) 0%, transparent 50%),
+              #0a0a1a;
+  pointer-events: none;
+}

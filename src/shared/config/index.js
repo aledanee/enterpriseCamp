@@ -17,6 +17,16 @@ const config = {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
+
+  email: {
+    smtpEmail: process.env.SMTP_EMAIL,
+    smtpAppPassword: process.env.SMTP_APP_PASSWORD,
+  },
+
+  whatsapp: {
+    tamraBaseUrl: process.env.TAMRA_BASE_URL || 'https://tamra.ibrahimihsan.site/api/v1/external',
+    tamraApiKey: process.env.TAMRA_API_KEY,
+  },
 };
 
 module.exports = config;

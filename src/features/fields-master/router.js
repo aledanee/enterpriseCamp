@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getFieldsMaster, getFieldDetail } = require('./controllers');
+const { getFieldsMaster, getFieldDetail, createField, updateField, deleteField } = require('./controllers');
 const { authenticateAdmin } = require('../../shared/middleware/auth');
 const logger = require('../../shared/services/logger');
 
@@ -308,6 +308,10 @@ router.get('/', getFieldsMaster);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/:id', getFieldDetail);
+
+router.post('/', createField);
+router.put('/:id', updateField);
+router.delete('/:id', deleteField);
 
 // Error handling middleware for fields-master routes
 router.use((error, req, res, next) => {

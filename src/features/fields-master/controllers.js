@@ -4,6 +4,47 @@ const logger = require('../../shared/services/logger');
 const prisma = require('../../db/prisma');
 
 /**
+ * Validation schemas for fields master
+ */
+const createFieldSchema = Joi.object({
+  field_name: Joi.string()
+    .min(2)
+    .max(50)
+    .pattern(/^[a-zA-Z0-9_]+$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Field name can only contain letters, numbers, and underscores',
+      'string.min': 'Field name must be at least 2 characters long',
+      'string.max': 'Field name cannot exceed 50 characters',
+      'any.required': 'Field name is required'
+    }),
+  field_label: Joi.string()
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      'string.min': 'Field label is required',
+      'string.max': 'Field label cannot exceed 100 characters',
+      'any.required': 'Field label is required'
+    }),
+  field_type: Joi.string()
+    .valid('text', 'email', 'tel', 'number', 'dropdown', 'textarea')
+    .required()
+    .messages({
+      'any.only': 'Field type must be one of: text, email, tel, number, dropdown, textarea',
+      'any.required': 'Field type is required'
+    }),
+  field_options: Joi.alternatives()
+    .try(
+      Joi.array().items(Joi.string()),
+      Joi.allow(null)
+    )
+    .optional()
+});
+
+const updateFieldSchema = createFieldSchema;
+
+/**
  * Get all fields from fields_master with usage statistics
  * UC-006 - Admin View Fields Master
  */
@@ -276,7 +317,277 @@ const getFieldDetail = async (req, res) => {
   }
 };
 
+/**
+ * Create a new master field
+ */
+const createField = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { error, value } = createFieldSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details.reduce((acc, d) => {
+          acc[d.path.join('.')] = d.message;
+          return acc;
+        }, {})
+      });
+    }
+
+    const { field_name, field_label, field_type, field_options } = value;
+
+    const existing = await prisma.fieldsMaster.findUnique({ where: { fieldName: field_name } });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate field name',
+        message: `A field with name "${field_name}" already exists`
+      });
+    }
+
+    const field = await prisma.fieldsMaster.create({
+      data: {
+        fieldName: field_name,
+        fieldLabel: field_label,
+        fieldType: field_type,
+        fieldOptions: field_options || null,
+      }
+    });
+
+    const responseTime = Date.now() - startTime;
+    logger.info('Field created successfully', {
+      action: 'create_field',
+      admin_id: req.admin.id,
+      field_id: field.id,
+      field_name: field.fieldName,
+      response_time_ms: responseTime,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Field created successfully',
+      data: {
+        field: {
+          id: field.id,
+          field_name: field.fieldName,
+          field_label: field.fieldLabel,
+          field_type: field.fieldType,
+          field_options: field.fieldOptions,
+          created_at: field.createdAt,
+          updated_at: field.updatedAt,
+        }
+      }
+    });
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    logger.error('Failed to create field', {
+      action: 'create_field_failed',
+      admin_id: req.admin?.id,
+      error: error.message,
+      response_time_ms: responseTime,
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to create field',
+      message: 'An error occurred while creating the field'
+    });
+  }
+};
+
+/**
+ * Update a master field
+ */
+const updateField = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { id } = req.params;
+    const fieldId = parseInt(id);
+
+    if (!fieldId || fieldId <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid field ID',
+        message: 'Field ID must be a positive integer'
+      });
+    }
+
+    const { error, value } = updateFieldSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details.reduce((acc, d) => {
+          acc[d.path.join('.')] = d.message;
+          return acc;
+        }, {})
+      });
+    }
+
+    const existingField = await prisma.fieldsMaster.findUnique({ where: { id: fieldId } });
+    if (!existingField) {
+      return res.status(404).json({
+        success: false,
+        error: 'Field not found',
+        message: 'The requested field does not exist'
+      });
+    }
+
+    const { field_name, field_label, field_type, field_options } = value;
+
+    const duplicate = await prisma.fieldsMaster.findFirst({
+      where: { fieldName: field_name, NOT: { id: fieldId } }
+    });
+    if (duplicate) {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate field name',
+        message: `A field with name "${field_name}" already exists`
+      });
+    }
+
+    const field = await prisma.fieldsMaster.update({
+      where: { id: fieldId },
+      data: {
+        fieldName: field_name,
+        fieldLabel: field_label,
+        fieldType: field_type,
+        fieldOptions: field_options || null,
+      }
+    });
+
+    const responseTime = Date.now() - startTime;
+    logger.info('Field updated successfully', {
+      action: 'update_field',
+      admin_id: req.admin.id,
+      field_id: field.id,
+      response_time_ms: responseTime,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Field updated successfully',
+      data: {
+        field: {
+          id: field.id,
+          field_name: field.fieldName,
+          field_label: field.fieldLabel,
+          field_type: field.fieldType,
+          field_options: field.fieldOptions,
+          created_at: field.createdAt,
+          updated_at: field.updatedAt,
+        }
+      }
+    });
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    logger.error('Failed to update field', {
+      action: 'update_field_failed',
+      admin_id: req.admin?.id,
+      error: error.message,
+      response_time_ms: responseTime,
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update field',
+      message: 'An error occurred while updating the field'
+    });
+  }
+};
+
+/**
+ * Delete a master field
+ */
+const deleteField = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { id } = req.params;
+    const fieldId = parseInt(id);
+
+    if (!fieldId || fieldId <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid field ID',
+        message: 'Field ID must be a positive integer'
+      });
+    }
+
+    const field = await prisma.fieldsMaster.findUnique({
+      where: { id: fieldId },
+      include: {
+        userTypeFields: {
+          include: { userType: { select: { id: true, typeName: true } } }
+        }
+      }
+    });
+
+    if (!field) {
+      return res.status(404).json({
+        success: false,
+        error: 'Field not found',
+        message: 'The requested field does not exist'
+      });
+    }
+
+    if (field.userTypeFields.length > 0) {
+      const { force } = req.body || {};
+      if (!force) {
+        return res.status(409).json({
+          success: false,
+          error: 'Field in use',
+          message: `هذا الحقل مستخدم في ${field.userTypeFields.length} نوع مستخدم. أرسل force: true لتأكيد الحذف.`,
+          data: {
+            used_by: field.userTypeFields.map(utf => ({
+              user_type_id: utf.userType.id,
+              type_name: utf.userType.typeName,
+            }))
+          }
+        });
+      }
+    }
+
+    await prisma.fieldsMaster.delete({ where: { id: fieldId } });
+
+    const responseTime = Date.now() - startTime;
+    logger.info('Field deleted successfully', {
+      action: 'delete_field',
+      admin_id: req.admin.id,
+      field_id: fieldId,
+      field_name: field.fieldName,
+      response_time_ms: responseTime,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Field deleted successfully',
+      data: { id: fieldId, field_name: field.fieldName }
+    });
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    logger.error('Failed to delete field', {
+      action: 'delete_field_failed',
+      admin_id: req.admin?.id,
+      error: error.message,
+      response_time_ms: responseTime,
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to delete field',
+      message: 'An error occurred while deleting the field'
+    });
+  }
+};
+
 module.exports = {
   getFieldsMaster,
-  getFieldDetail
+  getFieldDetail,
+  createField,
+  updateField,
+  deleteField
 };

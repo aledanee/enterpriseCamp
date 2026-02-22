@@ -20,11 +20,21 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'", `http://localhost:${process.env.PORT || 3220}`],
+      connectSrc: ["'self'", `http://localhost:${process.env.PORT || 3220}`, 'http://localhost:5173', 'http://localhost:4173'],
     },
   },
 }));
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:5173',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 // Body parsing middleware
 app.use(express.json());

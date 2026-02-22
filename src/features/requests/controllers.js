@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const Joi = require('joi');
 const logger = require('../../shared/services/logger');
 const prisma = require('../../db/prisma');
+const { notifyRequestStatusChange } = require('../../shared/services/notificationService');
 
 /**
  * Validation schemas for requests
@@ -781,6 +782,15 @@ const updateRequestStatus = async (req, res) => {
       response_time_ms: responseTime,
       timestamp: new Date().toISOString()
     });
+
+    // Fire-and-forget notifications (email + WhatsApp)
+    notifyRequestStatusChange({
+      requestId,
+      requestData: existingRequest.data,
+      typeName: existingRequest.userType?.typeName || 'غير محدد',
+      status,
+      adminNotes: admin_notes || null,
+    }).catch(() => {}); // swallow any unexpected error
 
     return res.status(200).json({
       success: true,
