@@ -1,4 +1,4 @@
-name: Test and Merge Protection
+name: Test, Merge Protection and Deploy
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
+  # ─── Stage 1: Run All Tests ───────────────────────────────────────
   test:
     runs-on: ubuntu-latest
     
@@ -25,6 +26,13 @@ jobs:
         ports:
           - 5432:5432
 
+    env:
+      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_lesone_db
+      ADMIN_EMAIL: admin@lesone.com
+      ADMIN_PASSWORD: admin123
+      JWT_SECRET: test-jwt-secret-for-github-actions
+      JWT_EXPIRES_IN: 7d
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -39,33 +47,15 @@ jobs:
       run: npm ci
 
     - name: Set up test environment
-      env:
-        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_lesone_db
-        ADMIN_EMAIL: admin@lesone.com
-        ADMIN_PASSWORD: admin123
-        JWT_SECRET: test-jwt-secret-for-github-actions
-        JWT_EXPIRES_IN: 7d
       run: |
-        # Generate Prisma client
         npm run db:generate
+        npx prisma db push
         echo "Test environment configured"
 
     - name: Run Unit Tests
-      env:
-        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_lesone_db
-        ADMIN_EMAIL: admin@lesone.com
-        ADMIN_PASSWORD: admin123
-        JWT_SECRET: test-jwt-secret-for-github-actions
-        JWT_EXPIRES_IN: 7d
       run: npm run test:unit
 
     - name: Run Integration Tests
-      env:
-        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_lesone_db
-        ADMIN_EMAIL: admin@lesone.com
-        ADMIN_PASSWORD: admin123
-        JWT_SECRET: test-jwt-secret-for-github-actions
-        JWT_EXPIRES_IN: 7d
       run: npm run test:integration
 
     - name: Test Results Summary
@@ -82,6 +72,7 @@ jobs:
           exit 1
         fi
 
+  # ─── Stage 2: Merge Protection (PRs only) ────────────────────────
   merge-protection:
     runs-on: ubuntu-latest
     needs: [test]
@@ -120,3 +111,76 @@ jobs:
             repo: context.repo.repo,
             body: '❌ **Tests failed!** This PR cannot be merged.\n\n**Issues Found:**\n- ❌ One or more tests are failing\n- ❌ Check the Actions tab for detailed error logs\n\n🔧 Please fix the failing tests before attempting to merge.'
           })
+
+  # ─── Stage 3: Deploy to Production (push to main only) ───────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "══════════════════════════════════════"
+            echo "🚀 Starting Production Deployment"
+            echo "══════════════════════════════════════"
+
+            cd /root/enterpriseCamp
+
+            # ── Pull Latest Code ──
+            echo "📥 Pulling latest changes from main..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # ── Backend Setup ──
+            echo "📦 Installing backend dependencies..."
+            npm ci --production
+
+            echo "🔧 Generating Prisma client..."
+            npx prisma generate
+
+            echo "🗄️ Running database migrations..."
+            npx prisma db push --accept-data-loss=false
+
+            # ── Frontend Setup ──
+            echo "🎨 Building frontend..."
+            cd frontend
+            npm ci
+            npm run build
+            cd ..
+
+            # ── Restart Services with PM2 ──
+            echo "♻️ Restarting PM2 services..."
+            if pm2 list | grep -q "backend\|frontend"; then
+              pm2 reload ecosystem.config.js
+            else
+              pm2 start ecosystem.config.js
+            fi
+            pm2 save
+
+            echo "══════════════════════════════════════"
+            echo "✅ Deployment completed successfully!"
+            echo "══════════════════════════════════════"
+
+      - name: Deployment Success Notification
+        if: success()
+        run: |
+          echo "✅ Production deployment completed!"
+          echo "📅 Deployed at: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "🔗 Commit: ${{ github.sha }}"
+
+      - name: Deployment Failure Notification
+        if: failure()
+        run: |
+          echo "❌ Deployment FAILED!"
+          echo "🔍 Check logs above for details"
+          echo "🔗 Failed commit: ${{ github.sha }}"
+          exit 1
