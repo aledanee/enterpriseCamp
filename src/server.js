@@ -20,7 +20,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'", `http://localhost:${process.env.PORT || 3220}`, 'http://localhost:5173', 'http://localhost:4173'],
+      connectSrc: ["'self'", `http://localhost:${process.env.PORT || 3220}`, 'http://localhost:5173', 'http://localhost:4173', 'http://bfmang.ibrahimihsan.site', 'http://ffmang.ibrahimihsan.site'],
     },
   },
 }));
@@ -29,6 +29,7 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:4173',
     'http://127.0.0.1:5173',
+    'http://ffmang.ibrahimihsan.site',
     process.env.FRONTEND_URL,
   ].filter(Boolean),
   credentials: true,
